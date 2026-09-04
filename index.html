@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Dynamic Landscape Tool</title>
+
+  <link rel="stylesheet" href="style.css" />
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+
+<body>
+  <main id="app">
+
+    <section id="viewer"></section>
+
+    <aside id="interface">
+      <header>
+        <div class="eyebrow">REAL-TIME LANDSCAPE MODEL</div>
+        <h1>SEDIMENT<br>FLOW</h1>
+        <p class="description">
+          An exploratory particle-based model for observing sediment movement
+          across a simplified terrain.
+        </p>
+      </header>
+
+      <section class="controls">
+
+        <div class="control">
+          <div class="label-row">
+            <label for="flow">FLOW</label>
+            <output id="flowValue">0.50</output>
+          </div>
+          <input id="flow" type="range" min="0" max="1" step="0.01" value="0.50">
+        </div>
+
+        <div class="control">
+          <div class="label-row">
+            <label for="slope">SLOPE</label>
+            <output id="slopeValue">0.50</output>
+          </div>
+          <input id="slope" type="range" min="0" max="1" step="0.01" value="0.50">
+        </div>
+
+        <div class="control">
+          <div class="label-row">
+            <label for="friction">FRICTION</label>
+            <output id="frictionValue">0.35</output>
+          </div>
+          <input id="friction" type="range" min="0" max="1" step="0.01" value="0.35">
+        </div>
+
+        <div class="control">
+          <div class="label-row">
+            <label for="material">MATERIAL</label>
+            <output id="materialValue">0.60</output>
+          </div>
+          <input id="material" type="range" min="0" max="1" step="0.01" value="0.60">
+        </div>
+
+        <div class="button-row">
+          <button id="playButton">PLAY</button>
+          <button id="resetButton">RESET</button>
+        </div>
+
+        <div class="button-row secondary">
+          <button id="addButton">ADD SEDIMENT</button>
+          <button id="terrainButton">NEW TERRAIN</button>
+        </div>
+
+      </section>
+
+      <footer>
+        <span id="status">PAUSED</span>
+        <span id="particleCount">0 PARTICLES</span>
+      </footer>
+    </aside>
+
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
