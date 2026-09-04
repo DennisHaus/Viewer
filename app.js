@@ -1,6 +1,24 @@
 import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
 import { OrbitControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js";
 
+const debugBox = document.createElement("div");
+
+debugBox.textContent = "APP STARTED";
+
+Object.assign(debugBox.style, {
+  position: "fixed",
+  top: "10px",
+  right: "10px",
+  zIndex: "99999",
+  padding: "8px 12px",
+  background: "#c6d37a",
+  color: "#111",
+  fontFamily: "Arial, sans-serif",
+  fontSize: "12px"
+});
+
+document.body.appendChild(debugBox);
+
 /* -------------------------------------------------------
    BASIC SETUP
 ------------------------------------------------------- */
