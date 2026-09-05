@@ -384,6 +384,12 @@ function addSediment() {
    UI
 ------------------------------------------------------- */
 
+/* -------------------------------------------------------
+   UI
+------------------------------------------------------- */
+
+const interfaceElement = document.getElementById("interface");
+
 const flowInput = document.getElementById("flow");
 const slopeInput = document.getElementById("slope");
 const frictionInput = document.getElementById("friction");
@@ -400,9 +406,14 @@ const addButton = document.getElementById("addButton");
 const terrainButton = document.getElementById("terrainButton");
 
 const status = document.getElementById("status");
-const particleCount = document.getElementById("particleCount");
+
+console.log("UI loaded");
+console.log("Play button:", playButton);
+console.log("Reset button:", resetButton);
 
 function updateValue(input, output, property) {
+  if (!input || !output) return;
+
   input.addEventListener("input", () => {
     params[property] = Number(input.value);
     output.textContent = Number(input.value).toFixed(2);
@@ -418,32 +429,61 @@ updateValue(slopeInput, slopeValue, "slope");
 updateValue(frictionInput, frictionValue, "friction");
 updateValue(materialInput, materialValue, "material");
 
-playButton.addEventListener("click", () => {
-  params.running = !params.running;
-  playButton.textContent = params.running ? "PAUSE" : "PLAY";
-  status.textContent = params.running ? "RUNNING" : "PAUSED";
-});
+function setStatus(text) {
+  if (status) {
+    status.textContent = text;
+  }
 
-resetButton.addEventListener("click", () => {
-  createParticles();
-  params.running = false;
-  playButton.textContent = "PLAY";
-  status.textContent = "PAUSED";
-});
-
-addButton.addEventListener("click", () => {
-  addSediment();
-});
-
-terrainButton.addEventListener("click", () => {
-  terrainSeed = Math.random() * 1000;
-  createTerrain();
-  createParticles();
-});
-
-function updateParticleCount() {
-  particleCount.textContent = `${particles.length} PARTICLES`;
+  console.log("STATUS:", text);
 }
+
+if (playButton) {
+  playButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+
+    params.running = !params.running;
+
+    playButton.textContent = params.running ? "PAUSE" : "PLAY";
+    setStatus(params.running ? "RUNNING" : "PAUSED");
+  });
+}
+
+if (resetButton) {
+  resetButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+
+    createParticles();
+
+    params.running = false;
+    playButton.textContent = "PLAY";
+    setStatus("RESET");
+  });
+}
+
+if (addButton) {
+  addButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+
+    addSediment();
+    setStatus("SEDIMENT ADDED");
+  });
+}
+
+if (terrainButton) {
+  terrainButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+
+    terrainSeed = Math.random() * 1000;
+    createTerrain();
+    createParticles();
+
+    params.running = false;
+    playButton.textContent = "PLAY";
+    setStatus("NEW TERRAIN");
+  });
+}
+
+setStatus("PAUSED");
 
 /* -------------------------------------------------------
    RENDER LOOP

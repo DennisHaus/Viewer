@@ -1,3 +1,22 @@
+#interface {
+  position: absolute;
+  z-index: 9999;
+  pointer-events: auto;
+}
+
+#viewer {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+
+button,
+input {
+  position: relative;
+  z-index: 10000;
+  pointer-events: auto;
+}
+
 :root {
   --background: #111311;
   --panel: rgba(17, 19, 17, 0.91);
