@@ -118,17 +118,52 @@ renderer.outputColorSpace =
 
 viewer.appendChild(renderer.domElement);
 
-const controls =
-  new OrbitControls(
-    camera,
-    renderer.domElement
-  );
+const controls = new OrbitControls(
+  camera,
+  renderer.domElement
+);
+
+/*
+  Standard orbit navigation:
+  - left mouse button: orbit / rotate
+  - middle mouse button: pan
+  - right mouse button: pan
+  - mouse wheel: zoom
+  - one-finger touch: orbit
+  - two-finger touch: pan and zoom
+*/
 
 controls.target.set(0, 0, 0);
+
+controls.enableRotate = true;
+controls.enablePan = true;
+controls.enableZoom = true;
+
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
+
+controls.screenSpacePanning = true;
+
+controls.rotateSpeed = 0.7;
+controls.panSpeed = 0.8;
+controls.zoomSpeed = 0.9;
+
 controls.minDistance = 4;
 controls.maxDistance = 40;
+
+controls.minPolarAngle = 0.05;
+controls.maxPolarAngle = Math.PI * 0.49;
+
+controls.mouseButtons = {
+  LEFT: THREE.MOUSE.ROTATE,
+  MIDDLE: THREE.MOUSE.PAN,
+  RIGHT: THREE.MOUSE.PAN
+};
+
+controls.touches = {
+  ONE: THREE.TOUCH.ROTATE,
+  TWO: THREE.TOUCH.DOLLY_PAN
+};
 
 /* -------------------------------------------------------
    LIGHTING
