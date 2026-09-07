@@ -107,6 +107,48 @@
           >
         </div>
 
+        <div class="control">
+          <div class="label-row">
+            <label for="terrainResolution">
+              TERRAIN RESOLUTION
+            </label>
+
+            <output id="terrainResolutionValue">
+              128
+            </output>
+          </div>
+
+          <input
+            id="terrainResolution"
+            type="range"
+            min="32"
+            max="256"
+            step="16"
+            value="128"
+          >
+        </div>
+
+        <div class="control">
+          <div class="label-row">
+            <label for="particleCount">
+              PARTICLES
+            </label>
+
+            <output id="particleCountValue">
+              3500
+            </output>
+          </div>
+
+          <input
+            id="particleCount"
+            type="range"
+            min="500"
+            max="10000"
+            step="500"
+            value="3500"
+          >
+        </div>
+
         <div class="button-row">
           <button id="playButton" type="button">
             PLAY
@@ -136,7 +178,9 @@
 
       <footer>
         <span id="status">PAUSED</span>
-        <span id="particleCount">0 PARTICLES</span>
+        <span id="particleCountStatus">
+          3500 PARTICLES
+        </span>
       </footer>
 
     </aside>

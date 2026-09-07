@@ -1,10 +1,12 @@
 :root {
-  --background: #111311;
-  --panel: rgba(17, 19, 17, 0.92);
-  --text: #e8e8df;
-  --muted: #999d91;
-  --line: #3d433b;
-  --accent: #c6d37a;
+  --background: #0c1b1d;
+  --panel: rgba(10, 28, 30, 0.94);
+  --text: #dceceb;
+  --muted: #86a7a7;
+  --line: #285052;
+  --accent: #54b8b3;
+  --accent-light: #9bd7d0;
+  --terrain: #174f56;
 }
 
 * {
@@ -50,11 +52,11 @@ body {
   z-index: 10;
   top: 24px;
   left: 24px;
-  width: 290px;
+  width: 300px;
   padding: 18px;
-  background: var(--panel);
   border: 1px solid var(--line);
-  backdrop-filter: blur(10px);
+  background: var(--panel);
+  backdrop-filter: blur(12px);
   pointer-events: auto;
 }
 
@@ -67,6 +69,7 @@ body {
 
 h1 {
   margin: 0;
+  color: var(--text);
   font-size: 32px;
   line-height: 0.88;
   font-weight: 500;
@@ -74,7 +77,7 @@ h1 {
 }
 
 .description {
-  max-width: 235px;
+  max-width: 240px;
   margin: 18px 0 28px;
   color: var(--muted);
   line-height: 1.45;
@@ -86,23 +89,25 @@ h1 {
 }
 
 .control {
-  margin-bottom: 18px;
+  margin-bottom: 17px;
 }
 
 .label-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   margin-bottom: 8px;
 }
 
 label {
-  font-size: 10px;
-  letter-spacing: 0.12em;
+  font-size: 9px;
+  letter-spacing: 0.1em;
 }
 
 output {
-  color: var(--accent);
+  flex-shrink: 0;
+  color: var(--accent-light);
   font-variant-numeric: tabular-nums;
 }
 
@@ -135,7 +140,7 @@ input[type="range"]::-moz-range-thumb {
 .button-row {
   display: flex;
   gap: 7px;
-  margin-top: 22px;
+  margin-top: 21px;
 }
 
 .button-row.secondary {
@@ -149,15 +154,15 @@ button {
   border: 1px solid var(--line);
   background: transparent;
   color: var(--text);
-  font-size: 10px;
-  letter-spacing: 0.09em;
+  font-size: 9px;
+  letter-spacing: 0.08em;
   cursor: pointer;
 }
 
 button:hover {
   border-color: var(--accent);
   background: var(--accent);
-  color: #171914;
+  color: #092022;
 }
 
 #dropZone {
@@ -178,7 +183,7 @@ button:hover {
   max-width: 100%;
   margin-top: 4px;
   overflow: hidden;
-  color: var(--accent);
+  color: var(--accent-light);
   font-size: 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -187,12 +192,12 @@ button:hover {
 #dropZone.drag-over {
   border-color: var(--accent);
   background: var(--accent);
-  color: #111;
+  color: #092022;
 }
 
 #dropZone.loaded {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-light);
 }
 
 footer {
@@ -208,7 +213,7 @@ footer {
 }
 
 #status {
-  color: var(--accent);
+  color: var(--accent-light);
 }
 
 @media (max-width: 600px) {
