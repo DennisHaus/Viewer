@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
   <title>Dynamic Landscape Tool</title>
 
@@ -37,11 +40,13 @@
 
         <p class="description">
           A simplified terrain-based model for observing sediment movement
-          across a changing topography.
+          across changing topography.
         </p>
       </header>
 
       <section class="controls">
+
+        <!-- MATERIAL PROPERTIES -->
 
         <div class="section-label">
           MATERIAL
@@ -53,9 +58,15 @@
               FRICTION
             </label>
 
-            <output id="materialFrictionValue">
-              0.35
-            </output>
+            <input
+              id="materialFrictionNumber"
+              class="numeric-input"
+              type="number"
+              min="0"
+              max="1"
+              step="0.01"
+              value="0.35"
+            >
           </div>
 
           <input
@@ -74,9 +85,15 @@
               COHESION
             </label>
 
-            <output id="materialCohesionValue">
-              0.60
-            </output>
+            <input
+              id="materialCohesionNumber"
+              class="numeric-input"
+              type="number"
+              min="0"
+              max="1"
+              step="0.01"
+              value="0.60"
+            >
           </div>
 
           <input
@@ -89,6 +106,8 @@
           >
         </div>
 
+        <!-- TERRAIN PROPERTIES -->
+
         <div class="section-label terrain-label">
           TERRAIN
         </div>
@@ -99,9 +118,15 @@
               TERRAIN RESPONSE
             </label>
 
-            <output id="terrainResponseValue">
-              1.00
-            </output>
+            <input
+              id="terrainResponseNumber"
+              class="numeric-input"
+              type="number"
+              min="0"
+              max="3"
+              step="0.01"
+              value="1.00"
+            >
           </div>
 
           <input
@@ -120,9 +145,15 @@
               TERRAIN RESOLUTION
             </label>
 
-            <output id="terrainResolutionValue">
-              256
-            </output>
+            <input
+              id="terrainResolutionNumber"
+              class="numeric-input"
+              type="number"
+              min="256"
+              max="3036"
+              step="1"
+              value="256"
+            >
           </div>
 
           <input
@@ -135,6 +166,68 @@
           >
         </div>
 
+        <!-- MODEL PROPERTIES -->
+
+        <div class="section-label terrain-label">
+          MODEL
+        </div>
+
+        <div class="control">
+          <div class="label-row">
+            <label for="modelScale">
+              MODEL SCALE
+            </label>
+
+            <input
+              id="modelScaleNumber"
+              class="numeric-input"
+              type="number"
+              min="0.1"
+              max="10"
+              step="0.1"
+              value="1.0"
+            >
+          </div>
+
+          <input
+            id="modelScale"
+            type="range"
+            min="0.1"
+            max="10"
+            step="0.1"
+            value="1.0"
+          >
+        </div>
+
+        <div class="control">
+          <div class="label-row">
+            <label for="verticalExaggeration">
+              VERTICAL EXAGGERATION
+            </label>
+
+            <input
+              id="verticalExaggerationNumber"
+              class="numeric-input"
+              type="number"
+              min="0.1"
+              max="20"
+              step="0.1"
+              value="4.0"
+            >
+          </div>
+
+          <input
+            id="verticalExaggeration"
+            type="range"
+            min="0.1"
+            max="20"
+            step="0.1"
+            value="4.0"
+          >
+        </div>
+
+        <!-- SOURCE PROPERTIES -->
+
         <div class="section-label terrain-label">
           SOURCE
         </div>
@@ -145,9 +238,15 @@
               SOURCE VOLUME m³
             </label>
 
-            <output id="sourceVolumeValue">
-              8
-            </output>
+            <input
+              id="sourceVolumeNumber"
+              class="numeric-input"
+              type="number"
+              min="1"
+              max="1000"
+              step="1"
+              value="8"
+            >
           </div>
 
           <input
@@ -166,9 +265,15 @@
               PARTICLE SIZE
             </label>
 
-            <output id="particleSizeValue">
-              7
-            </output>
+            <input
+              id="particleSizeNumber"
+              class="numeric-input"
+              type="number"
+              min="2"
+              max="24"
+              step="1"
+              value="7"
+            >
           </div>
 
           <input
@@ -181,6 +286,8 @@
           >
         </div>
 
+        <!-- MODEL ORIENTATION -->
+
         <div class="section-label terrain-label">
           MODEL ORIENTATION
         </div>
@@ -191,9 +298,15 @@
               ROTATE X
             </label>
 
-            <output id="rotationXValue">
-              0°
-            </output>
+            <input
+              id="rotationXNumber"
+              class="numeric-input"
+              type="number"
+              min="-180"
+              max="180"
+              step="45"
+              value="0"
+            >
           </div>
 
           <input
@@ -201,7 +314,7 @@
             type="range"
             min="-180"
             max="180"
-            step="1"
+            step="45"
             value="0"
           >
         </div>
@@ -212,9 +325,15 @@
               ROTATE Y
             </label>
 
-            <output id="rotationYValue">
-              0°
-            </output>
+            <input
+              id="rotationYNumber"
+              class="numeric-input"
+              type="number"
+              min="-180"
+              max="180"
+              step="45"
+              value="0"
+            >
           </div>
 
           <input
@@ -222,7 +341,7 @@
             type="range"
             min="-180"
             max="180"
-            step="1"
+            step="45"
             value="0"
           >
         </div>
@@ -233,9 +352,15 @@
               ROTATE Z
             </label>
 
-            <output id="rotationZValue">
-              0°
-            </output>
+            <input
+              id="rotationZNumber"
+              class="numeric-input"
+              type="number"
+              min="-180"
+              max="180"
+              step="45"
+              value="0"
+            >
           </div>
 
           <input
@@ -243,10 +368,12 @@
             type="range"
             min="-180"
             max="180"
-            step="1"
+            step="45"
             value="0"
           >
         </div>
+
+        <!-- BUTTONS -->
 
         <div class="button-row">
           <button
