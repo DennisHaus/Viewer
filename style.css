@@ -186,8 +186,8 @@ input[type="range"]::-moz-range-thumb {
 
 input[type="range"]::-moz-range-track {
   height: 2px;
-  background: var(--line);
   border: 0;
+  background: var(--line);
 }
 
 .button-row {
@@ -212,9 +212,16 @@ button {
   font-size: 9px;
   letter-spacing: 0.08em;
   cursor: pointer;
+  pointer-events: auto;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.1s ease;
 }
 
-button:hover {
+button:hover,
+.file-button:hover {
   border-color: var(--accent);
   background: var(--accent);
   color: #092022;
@@ -224,7 +231,15 @@ button:active {
   transform: translateY(1px);
 }
 
+.file-button {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+}
+
 #dropZone {
+  position: relative;
+  z-index: 20;
   margin-top: 20px;
   padding: 15px 10px;
   border: 1px dashed var(--line);
@@ -233,8 +248,12 @@ button:active {
   font-size: 9px;
   letter-spacing: 0.1em;
   line-height: 1.5;
-  transition: 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
   cursor: default;
+  pointer-events: auto;
 }
 
 #dropZone span {
@@ -311,13 +330,4 @@ footer {
   .numeric-input {
     width: 62px;
   }
-}
-
-.file-button {
-  width: 100%;
-  margin-top: 7px;
-}
-
-#modelFileInput {
-  display: none;
 }
