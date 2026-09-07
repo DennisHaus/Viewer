@@ -209,7 +209,7 @@ button:hover {
 #dropZone.drag-over {
   border-color: var(--accent);
   background: var(--accent);
-  color: #092022;
+  color: black;
 }
 
 #dropZone.loaded {
