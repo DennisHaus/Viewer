@@ -46,8 +46,6 @@
 
       <section class="controls">
 
-        <!-- MATERIAL PROPERTIES -->
-
         <div class="section-label">
           MATERIAL
         </div>
@@ -106,8 +104,6 @@
           >
         </div>
 
-        <!-- TERRAIN PROPERTIES -->
-
         <div class="section-label terrain-label">
           TERRAIN
         </div>
@@ -149,8 +145,8 @@
               id="terrainResolutionNumber"
               class="numeric-input"
               type="number"
-              min="256"
-              max="3036"
+              min="64"
+              max="768"
               step="1"
               value="256"
             >
@@ -159,14 +155,12 @@
           <input
             id="terrainResolution"
             type="range"
-            min="256"
-            max="3036"
+            min="64"
+            max="768"
             step="1"
             value="256"
           >
         </div>
-
-        <!-- MODEL PROPERTIES -->
 
         <div class="section-label terrain-label">
           MODEL
@@ -226,8 +220,6 @@
           >
         </div>
 
-        <!-- SOURCE PROPERTIES -->
-
         <div class="section-label terrain-label">
           SOURCE
         </div>
@@ -285,8 +277,6 @@
             value="7"
           >
         </div>
-
-        <!-- MODEL ORIENTATION -->
 
         <div class="section-label terrain-label">
           MODEL ORIENTATION
@@ -373,45 +363,28 @@
           >
         </div>
 
-        <!-- BUTTONS -->
-
         <div class="button-row">
-          <button
-            id="resetOrientationButton"
-            type="button"
-          >
+          <button id="resetOrientationButton" type="button">
             RESET ROTATION
           </button>
         </div>
 
         <div class="button-row">
-          <button
-            id="playButton"
-            type="button"
-          >
+          <button id="playButton" type="button">
             PLAY
           </button>
 
-          <button
-            id="resetButton"
-            type="button"
-          >
+          <button id="resetButton" type="button">
             RESET
           </button>
         </div>
 
         <div class="button-row secondary">
-          <button
-            id="addButton"
-            type="button"
-          >
+          <button id="addButton" type="button">
             ADD MATERIAL
           </button>
 
-          <button
-            id="terrainButton"
-            type="button"
-          >
+          <button id="terrainButton" type="button">
             NEW TERRAIN
           </button>
         </div>
@@ -422,6 +395,21 @@
         DROP 3D TERRAIN HERE
         <span>PLY / STL / OBJ</span>
       </div>
+
+      <input
+        id="modelFileInput"
+        type="file"
+        accept=".ply,.stl,.obj"
+        hidden
+      >
+
+      <button
+        id="chooseModelButton"
+        type="button"
+        class="file-button"
+      >
+        CHOOSE 3D MODEL
+      </button>
 
       <div id="sourceHint">
         SHIFT + LEFT CLICK TO PLACE SOURCE
