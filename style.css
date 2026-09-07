@@ -1,11 +1,12 @@
 :root {
   --background: #0c1b1d;
-  --panel: rgba(10, 28, 30, 0.94);
+  --panel: rgba(10, 28, 30, 0.95);
   --text: #dceceb;
   --muted: #86a7a7;
   --line: #285052;
   --accent: #54b8b3;
   --accent-light: #9bd7d0;
+  --terrain: #174f56;
 }
 
 * {
@@ -56,12 +57,26 @@ body {
   z-index: 10;
   top: 24px;
   left: 24px;
-  width: 300px;
+  width: 310px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
   padding: 18px;
   border: 1px solid var(--line);
   background: var(--panel);
   backdrop-filter: blur(12px);
   pointer-events: auto;
+}
+
+#interface::-webkit-scrollbar {
+  width: 4px;
+}
+
+#interface::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#interface::-webkit-scrollbar-thumb {
+  background: var(--line);
 }
 
 .eyebrow {
@@ -81,7 +96,7 @@ h1 {
 }
 
 .description {
-  max-width: 240px;
+  max-width: 245px;
   margin: 18px 0 28px;
   color: var(--muted);
   line-height: 1.45;
@@ -233,6 +248,7 @@ footer {
     top: 12px;
     left: 12px;
     width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
   }
 
   h1 {

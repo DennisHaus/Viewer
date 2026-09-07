@@ -26,9 +26,14 @@
     <aside id="interface">
 
       <header>
-        <div class="eyebrow">REAL-TIME LANDSCAPE MODEL</div>
+        <div class="eyebrow">
+          REAL-TIME LANDSCAPE MODEL
+        </div>
 
-        <h1>SEDIMENT<br>FLOW</h1>
+        <h1>
+          SEDIMENT<br>
+          FLOW
+        </h1>
 
         <p class="description">
           An exploratory particle-based model for observing sediment movement
@@ -43,15 +48,15 @@
             <label for="flow">FLOW</label>
             <output id="flowValue">0.50</output>
           </div>
-          <input id="flow" type="range" min="0" max="1" step="0.01" value="0.50">
-        </div>
 
-        <div class="control">
-          <div class="label-row">
-            <label for="slope">SLOPE</label>
-            <output id="slopeValue">0.50</output>
-          </div>
-          <input id="slope" type="range" min="0" max="1" step="0.01" value="0.50">
+          <input
+            id="flow"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.50"
+          >
         </div>
 
         <div class="control">
@@ -59,7 +64,15 @@
             <label for="friction">FRICTION</label>
             <output id="frictionValue">0.35</output>
           </div>
-          <input id="friction" type="range" min="0" max="1" step="0.01" value="0.35">
+
+          <input
+            id="friction"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.35"
+          >
         </div>
 
         <div class="control">
@@ -67,14 +80,28 @@
             <label for="material">MATERIAL</label>
             <output id="materialValue">0.60</output>
           </div>
-          <input id="material" type="range" min="0" max="1" step="0.01" value="0.60">
+
+          <input
+            id="material"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.60"
+          >
         </div>
 
         <div class="control">
           <div class="label-row">
-            <label for="terrainResolution">TERRAIN RESOLUTION</label>
-            <output id="terrainResolutionValue">128</output>
+            <label for="terrainResolution">
+              TERRAIN RESOLUTION
+            </label>
+
+            <output id="terrainResolutionValue">
+              128
+            </output>
           </div>
+
           <input
             id="terrainResolution"
             type="range"
@@ -87,9 +114,15 @@
 
         <div class="control">
           <div class="label-row">
-            <label for="particleCount">PARTICLES</label>
-            <output id="particleCountValue">3500</output>
+            <label for="particleCount">
+              PARTICLES
+            </label>
+
+            <output id="particleCountValue">
+              3500
+            </output>
           </div>
+
           <input
             id="particleCount"
             type="range"
@@ -102,9 +135,15 @@
 
         <div class="control">
           <div class="label-row">
-            <label for="sourceVolume">SOURCE VOLUME m³</label>
-            <output id="sourceVolumeValue">8</output>
+            <label for="sourceVolume">
+              SOURCE VOLUME m³
+            </label>
+
+            <output id="sourceVolumeValue">
+              8
+            </output>
           </div>
+
           <input
             id="sourceVolume"
             type="range"
@@ -115,14 +154,108 @@
           >
         </div>
 
+        <div class="control">
+          <div class="label-row">
+            <label for="rotationX">
+              ROTATE X
+            </label>
+
+            <output id="rotationXValue">
+              0°
+            </output>
+          </div>
+
+          <input
+            id="rotationX"
+            type="range"
+            min="-180"
+            max="180"
+            step="1"
+            value="0"
+          >
+        </div>
+
+        <div class="control">
+          <div class="label-row">
+            <label for="rotationY">
+              ROTATE Y
+            </label>
+
+            <output id="rotationYValue">
+              0°
+            </output>
+          </div>
+
+          <input
+            id="rotationY"
+            type="range"
+            min="-180"
+            max="180"
+            step="1"
+            value="0"
+          >
+        </div>
+
+        <div class="control">
+          <div class="label-row">
+            <label for="rotationZ">
+              ROTATE Z
+            </label>
+
+            <output id="rotationZValue">
+              0°
+            </output>
+          </div>
+
+          <input
+            id="rotationZ"
+            type="range"
+            min="-180"
+            max="180"
+            step="1"
+            value="0"
+          >
+        </div>
+
         <div class="button-row">
-          <button id="playButton" type="button">PLAY</button>
-          <button id="resetButton" type="button">RESET</button>
+          <button
+            id="resetOrientationButton"
+            type="button"
+          >
+            RESET ROTATION
+          </button>
+        </div>
+
+        <div class="button-row">
+          <button
+            id="playButton"
+            type="button"
+          >
+            PLAY
+          </button>
+
+          <button
+            id="resetButton"
+            type="button"
+          >
+            RESET
+          </button>
         </div>
 
         <div class="button-row secondary">
-          <button id="addButton" type="button">ADD SEDIMENT</button>
-          <button id="terrainButton" type="button">NEW TERRAIN</button>
+          <button
+            id="addButton"
+            type="button"
+          >
+            ADD SEDIMENT
+          </button>
+
+          <button
+            id="terrainButton"
+            type="button"
+          >
+            NEW TERRAIN
+          </button>
         </div>
 
       </section>
@@ -137,14 +270,22 @@
       </div>
 
       <footer>
-        <span id="status">PAUSED</span>
-        <span id="particleCountStatus">3500 PARTICLES</span>
+        <span id="status">
+          PAUSED
+        </span>
+
+        <span id="particleCountStatus">
+          3500 PARTICLES
+        </span>
       </footer>
 
     </aside>
 
   </main>
 
-  <script type="module" src="app.js"></script>
+  <script
+    type="module"
+    src="app.js"
+  ></script>
 </body>
 </html>
