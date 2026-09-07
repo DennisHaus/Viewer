@@ -118,7 +118,35 @@ h1 {
 }
 
 .control {
+  position: relative;
   margin-bottom: 17px;
+}
+
+.control[data-tip]::after {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 50;
+  width: 250px;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  background: #10282a;
+  color: var(--text);
+  content: attr(data-tip);
+  font-size: 10px;
+  line-height: 1.35;
+  letter-spacing: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(3px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.control[data-tip]:hover::after {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .label-row {
@@ -135,7 +163,7 @@ label {
 }
 
 .numeric-input {
-  width: 68px;
+  width: 78px;
   min-width: 0;
   padding: 3px 5px;
   border: 1px solid var(--line);
@@ -328,6 +356,10 @@ footer {
   }
 
   .numeric-input {
-    width: 62px;
+    width: 70px;
+  }
+
+  .control[data-tip]::after {
+    width: 210px;
   }
 }

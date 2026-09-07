@@ -18,62 +18,97 @@ import {
 
 
 /* =====================================================
-   DOM HELPERS
+   DOM
 ===================================================== */
 
 const $ = (id) => document.getElementById(id);
 
 const viewer = $("viewer");
 
-const materialFrictionInput = $("materialFriction");
-const materialFrictionNumber = $("materialFrictionNumber");
+const terrainFrictionInput =
+  $("terrainFriction");
 
-const materialCohesionInput = $("materialCohesion");
-const materialCohesionNumber = $("materialCohesionNumber");
+const terrainFrictionNumber =
+  $("terrainFrictionNumber");
 
-const terrainResponseInput = $("terrainResponse");
-const terrainResponseNumber = $("terrainResponseNumber");
+const terrainResolutionInput =
+  $("terrainResolution");
 
-const terrainResolutionInput = $("terrainResolution");
-const terrainResolutionNumber = $("terrainResolutionNumber");
+const terrainResolutionNumber =
+  $("terrainResolutionNumber");
 
-const modelScaleInput = $("modelScale");
-const modelScaleNumber = $("modelScaleNumber");
+const modelScaleInput =
+  $("modelScale");
 
-const verticalExaggerationInput = $("verticalExaggeration");
+const modelScaleNumber =
+  $("modelScaleNumber");
+
+const verticalExaggerationInput =
+  $("verticalExaggeration");
+
 const verticalExaggerationNumber =
   $("verticalExaggerationNumber");
 
-const sourceVolumeInput = $("sourceVolume");
-const sourceVolumeNumber = $("sourceVolumeNumber");
+const sourceVolumeInput =
+  $("sourceVolume");
 
-const particleSizeInput = $("particleSize");
-const particleSizeNumber = $("particleSizeNumber");
+const sourceVolumeNumber =
+  $("sourceVolumeNumber");
 
-const rotationXInput = $("rotationX");
-const rotationXNumber = $("rotationXNumber");
+const particleSizeInput =
+  $("particleSize");
 
-const rotationYInput = $("rotationY");
-const rotationYNumber = $("rotationYNumber");
+const particleSizeNumber =
+  $("particleSizeNumber");
 
-const rotationZInput = $("rotationZ");
-const rotationZNumber = $("rotationZNumber");
+const rotationXInput =
+  $("rotationX");
 
-const playButton = $("playButton");
-const resetButton = $("resetButton");
-const addButton = $("addButton");
-const terrainButton = $("terrainButton");
+const rotationXNumber =
+  $("rotationXNumber");
+
+const rotationYInput =
+  $("rotationY");
+
+const rotationYNumber =
+  $("rotationYNumber");
+
+const rotationZInput =
+  $("rotationZ");
+
+const rotationZNumber =
+  $("rotationZNumber");
+
+const playButton =
+  $("playButton");
+
+const resetButton =
+  $("resetButton");
+
+const addButton =
+  $("addButton");
+
+const terrainButton =
+  $("terrainButton");
+
 const resetOrientationButton =
   $("resetOrientationButton");
 
-const statusElement = $("status");
+const statusElement =
+  $("status");
+
 const particleCountStatus =
   $("particleCountStatus");
 
-const dropZone = $("dropZone");
-const modelFileInput = $("modelFileInput");
+const dropZone =
+  $("dropZone");
+
+const modelFileInput =
+  $("modelFileInput");
+
 const chooseModelButton =
   $("chooseModelButton");
+
 
 function setStatus(text) {
   if (statusElement) {
@@ -86,7 +121,8 @@ function setStatus(text) {
    SCENE
 ===================================================== */
 
-const scene = new THREE.Scene();
+const scene =
+  new THREE.Scene();
 
 scene.background =
   new THREE.Color(0x000000);
@@ -100,7 +136,11 @@ const camera =
     2000
   );
 
-camera.position.set(14, 11, 15);
+camera.position.set(
+  14,
+  11,
+  15
+);
 
 const renderer =
   new THREE.WebGLRenderer({
@@ -129,7 +169,7 @@ viewer.appendChild(
 
 
 /* =====================================================
-   CONTROLS
+   CAMERA CONTROLS
 ===================================================== */
 
 const controls =
@@ -138,13 +178,16 @@ const controls =
     renderer.domElement
   );
 
-controls.target.set(0, 0, 0);
+controls.target.set(
+  0,
+  0,
+  0
+);
 
 controls.enableRotate = true;
 controls.enablePan = true;
 controls.enableZoom = true;
 controls.enableDamping = true;
-
 controls.dampingFactor = 0.08;
 controls.screenSpacePanning = true;
 
@@ -176,21 +219,22 @@ controls.touches = {
 ===================================================== */
 
 scene.add(
-  new THREE.AmbientLight(
+  new THREE.HemisphereLight(
     0xffffff,
+    0x202020,
     1.4
   )
 );
 
 const directionalLight =
   new THREE.DirectionalLight(
-    0xb8ffff,
-    2.0
+    0xffffff,
+    2.2
   );
 
 directionalLight.position.set(
   8,
-  15,
+  16,
   10
 );
 
@@ -204,12 +248,10 @@ scene.add(
 ===================================================== */
 
 const params = {
-  materialFriction: 0.35,
-  materialCohesion: 0.60,
-  terrainResponse: 1.00,
+  terrainFriction: 0.35,
   terrainResolution: 256,
   modelScale: 1.0,
-  verticalExaggeration: 4.0,
+  verticalExaggeration: 1.0,
   sourceVolume: 8,
   particleSize: 7,
   running: false
@@ -461,16 +503,20 @@ function createTerrain() {
   }
 
   positions.needsUpdate = true;
-
   geometry.computeVertexNormals();
 
+  /*
+    White material:
+    the visible variation comes only from
+    lighting and geometry normals.
+  */
   terrainMesh =
     new THREE.Mesh(
       geometry,
       new THREE.MeshStandardMaterial({
-        color: 0x174f56,
-        roughness: 0.88,
-        metalness: 0.04,
+        color: 0xffffff,
+        roughness: 0.92,
+        metalness: 0.0,
         side: THREE.DoubleSide
       })
     );
@@ -481,10 +527,10 @@ function createTerrain() {
     new THREE.Mesh(
       geometry.clone(),
       new THREE.MeshBasicMaterial({
-        color: 0x55a9aa,
+        color: 0x777777,
         wireframe: true,
         transparent: true,
-        opacity: 0.16
+        opacity: 0.08
       })
     );
 
@@ -540,16 +586,13 @@ function updateSourceMarker() {
     sourceLocation
   );
 
-  const markerScale =
+  sourceMarker.scale.setScalar(
     Math.max(
       0.65,
       Math.cbrt(
         params.sourceVolume
       )
-    );
-
-  sourceMarker.scale.setScalar(
-    markerScale
+    )
   );
 }
 
@@ -743,9 +786,15 @@ function resetParticle(particle) {
   const replacement =
     createRandomParticle();
 
-  particle.x = replacement.x;
-  particle.y = replacement.y;
-  particle.z = replacement.z;
+  particle.x =
+    replacement.x;
+
+  particle.y =
+    replacement.y;
+
+  particle.z =
+    replacement.z;
+
   particle.vx = 0;
   particle.vy = 0;
   particle.vz = 0;
@@ -861,19 +910,17 @@ function updateSimulation(deltaTime) {
 
     particle.vx +=
       -gradient.dx *
-      params.terrainResponse *
       deltaTime;
 
     particle.vz +=
       -gradient.dz *
-      params.terrainResponse *
       deltaTime;
 
     const frictionFactor =
       Math.max(
         0,
         1 -
-        params.materialFriction *
+        params.terrainFriction *
         5 *
         deltaTime
       );
@@ -902,27 +949,28 @@ function updateSimulation(deltaTime) {
 
     const settlingThreshold =
       0.08 +
-      params.materialCohesion *
+      params.terrainFriction *
       0.5;
 
     if (
       speed <
       settlingThreshold
     ) {
-      const settlingFactor =
+      particle.vx *=
         Math.max(
           0,
           1 -
-          params.materialCohesion *
-          0.8 *
+          params.terrainFriction *
           deltaTime
         );
 
-      particle.vx *=
-        settlingFactor;
-
       particle.vz *=
-        settlingFactor;
+        Math.max(
+          0,
+          1 -
+          params.terrainFriction *
+          deltaTime
+        );
 
       particle.deposited = true;
     } else {
@@ -965,8 +1013,10 @@ function updateSimulation(deltaTime) {
       particle.z;
   }
 
-  particleGeometry.attributes.position.needsUpdate =
-    true;
+  particleGeometry
+    .attributes
+    .position
+    .needsUpdate = true;
 }
 
 
@@ -1123,10 +1173,13 @@ function createTerrainFromPoints(points) {
     return;
   }
 
-  rawModelPoints = points;
+  rawModelPoints =
+    points;
 
   const transformedPoints =
-    transformModelPoints(points);
+    transformModelPoints(
+      points
+    );
 
   const bounds =
     new THREE.Box3();
@@ -1156,9 +1209,6 @@ function createTerrainFromPoints(points) {
     bounds.min.y;
 
   if (
-    !Number.isFinite(width) ||
-    !Number.isFinite(depth) ||
-    !Number.isFinite(height) ||
     width <= 0 ||
     depth <= 0 ||
     height <= 0
@@ -1275,11 +1325,6 @@ function createTerrainFromPoints(points) {
     }
   }
 
-  /*
-    Fill empty cells.
-    This is deliberately limited to avoid
-    blocking the browser.
-  */
   for (
     let pass = 0;
     pass < 16;
@@ -1392,7 +1437,8 @@ function createTerrainFromPoints(points) {
   updateSourceMarker();
   createParticles();
 
-  params.running = false;
+  params.running =
+    false;
 
   playButton.textContent =
     "PLAY";
@@ -1615,7 +1661,9 @@ function load3DTerrain(file) {
       );
     };
 
-  reader.readAsArrayBuffer(file);
+  reader.readAsArrayBuffer(
+    file
+  );
 }
 
 
@@ -1645,35 +1693,23 @@ function snapRotation(value) {
 }
 
 function updateRotationUI() {
-  if (rotationXInput) {
-    rotationXInput.value =
-      modelRotation.x;
-  }
+  rotationXInput.value =
+    modelRotation.x;
 
-  if (rotationYInput) {
-    rotationYInput.value =
-      modelRotation.y;
-  }
+  rotationYInput.value =
+    modelRotation.y;
 
-  if (rotationZInput) {
-    rotationZInput.value =
-      modelRotation.z;
-  }
+  rotationZInput.value =
+    modelRotation.z;
 
-  if (rotationXNumber) {
-    rotationXNumber.value =
-      modelRotation.x;
-  }
+  rotationXNumber.value =
+    modelRotation.x;
 
-  if (rotationYNumber) {
-    rotationYNumber.value =
-      modelRotation.y;
-  }
+  rotationYNumber.value =
+    modelRotation.y;
 
-  if (rotationZNumber) {
-    rotationZNumber.value =
-      modelRotation.z;
-  }
+  rotationZNumber.value =
+    modelRotation.z;
 }
 
 function rebuildRotatedTerrain() {
@@ -1690,10 +1726,6 @@ function rebuildRotatedTerrain() {
 
   createTerrainFromPoints(
     rawModelPoints
-  );
-
-  setStatus(
-    "MODEL ROTATED"
   );
 }
 
@@ -1717,7 +1749,7 @@ function applyRotation(axis, value) {
 
 
 /* =====================================================
-   SLIDER BINDING
+   SLIDERS
 ===================================================== */
 
 function bindNumericSlider(
@@ -1821,40 +1853,14 @@ function rebuildTerrainAfterChange() {
 }
 
 bindNumericSlider(
-  materialFrictionInput,
-  materialFrictionNumber,
+  terrainFrictionInput,
+  terrainFrictionNumber,
   (value) => {
-    params.materialFriction =
+    params.terrainFriction =
       value;
 
     setStatus(
       "FRICTION UPDATED"
-    );
-  }
-);
-
-bindNumericSlider(
-  materialCohesionInput,
-  materialCohesionNumber,
-  (value) => {
-    params.materialCohesion =
-      value;
-
-    setStatus(
-      "COHESION UPDATED"
-    );
-  }
-);
-
-bindNumericSlider(
-  terrainResponseInput,
-  terrainResponseNumber,
-  (value) => {
-    params.terrainResponse =
-      value;
-
-    setStatus(
-      "TERRAIN RESPONSE UPDATED"
     );
   }
 );
@@ -1902,7 +1908,7 @@ bindNumericSlider(
     rebuildTerrainAfterChange();
 
     setStatus(
-      `VERTICAL EXAGGERATION ${value}`
+      `VERTICAL SCALE ${value}`
     );
   }
 );
@@ -2056,7 +2062,7 @@ renderer.domElement.addEventListener(
 
 
 /* =====================================================
-   DRAG AND DROP / FILE BUTTON
+   IMPORT EVENTS
 ===================================================== */
 
 dropZone.addEventListener(
