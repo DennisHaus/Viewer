@@ -191,8 +191,8 @@ const params = {
   modelScale: 1.0,
   verticalExaggeration: 1.0,
 
-  sourceVolume: 8,
-  particleSize: 7,
+  sourceVolume: 100,
+  particleSize: 2,
 
   launchDuration: 2.5,
   minimumMovementSpeed: 0.12,
@@ -447,7 +447,7 @@ function getParticleCount() {
   return Math.max(
     1,
     Math.min(
-      1000,
+      10000,
       Math.round(params.sourceVolume)
     )
   );
