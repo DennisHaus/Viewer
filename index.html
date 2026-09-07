@@ -10,7 +10,7 @@
 
   <title>Dynamic Landscape Tool</title>
 
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="./style.css">
 
   <script type="importmap">
   {
@@ -47,18 +47,23 @@
 
       <section class="controls">
 
+        <!-- MATERIAL -->
+
         <div class="section-label">
-          TERRAIN
+          MATERIAL
         </div>
 
-        <div class="control" data-tip="Controls how strongly particles slow down when moving across the terrain.">
+        <div
+          class="control"
+          data-tip="Controls how quickly sediment particles lose velocity during movement."
+        >
           <div class="label-row">
-            <label for="terrainFriction">
-              TERRAIN FRICTION
+            <label for="materialFriction">
+              MATERIAL FRICTION
             </label>
 
             <input
-              id="terrainFrictionNumber"
+              id="materialFrictionNumber"
               class="numeric-input"
               type="number"
               min="0"
@@ -69,7 +74,7 @@
           </div>
 
           <input
-            id="terrainFriction"
+            id="materialFriction"
             type="range"
             min="0"
             max="1"
@@ -78,7 +83,46 @@
           >
         </div>
 
-        <div class="control" data-tip="Defines the resolution of the generated terrain grid. Higher values create more detail but require more computation.">
+        <div
+          class="control"
+          data-tip="Provides particles with an initial movement impulse so they can leave small depressions."
+        >
+          <div class="label-row">
+            <label for="startVelocity">
+              START VELOCITY
+            </label>
+
+            <input
+              id="startVelocityNumber"
+              class="numeric-input"
+              type="number"
+              min="0"
+              max="5"
+              step="0.05"
+              value="1.0"
+            >
+          </div>
+
+          <input
+            id="startVelocity"
+            type="range"
+            min="0"
+            max="5"
+            step="0.05"
+            value="1.0"
+          >
+        </div>
+
+        <!-- TERRAIN -->
+
+        <div class="section-label terrain-label">
+          TERRAIN
+        </div>
+
+        <div
+          class="control"
+          data-tip="Defines the resolution of the terrain grid. Higher values create more detail but require more computation."
+        >
           <div class="label-row">
             <label for="terrainResolution">
               TERRAIN RESOLUTION
@@ -105,7 +149,16 @@
           >
         </div>
 
-        <div class="control" data-tip="Scales the imported model horizontally within the viewer.">
+        <!-- MODEL -->
+
+        <div class="section-label terrain-label">
+          MODEL
+        </div>
+
+        <div
+          class="control"
+          data-tip="Scales the imported model within the viewer. The scale starts at 0.1 and can reach 1000."
+        >
           <div class="label-row">
             <label for="modelScale">
               MODEL SCALE
@@ -132,7 +185,10 @@
           >
         </div>
 
-        <div class="control" data-tip="Controls the vertical height of the terrain. The default value 1.0 preserves the original proportions.">
+        <div
+          class="control"
+          data-tip="Controls the vertical scale of the terrain. The default value 1.0 preserves the original vertical proportions."
+        >
           <div class="label-row">
             <label for="verticalExaggeration">
               VERTICAL SCALE
@@ -159,11 +215,16 @@
           >
         </div>
 
+        <!-- SOURCE -->
+
         <div class="section-label terrain-label">
           SOURCE
         </div>
 
-        <div class="control" data-tip="Sets the amount of sediment particles released at the source location.">
+        <div
+          class="control"
+          data-tip="Sets the amount of sediment particles released at the source location."
+        >
           <div class="label-row">
             <label for="sourceVolume">
               SOURCE VOLUME m³
@@ -190,7 +251,10 @@
           >
         </div>
 
-        <div class="control" data-tip="Controls the visual size of the sediment particles.">
+        <div
+          class="control"
+          data-tip="Controls the visual size of the sediment particles."
+        >
           <div class="label-row">
             <label for="particleSize">
               PARTICLE SIZE
@@ -217,11 +281,16 @@
           >
         </div>
 
+        <!-- MODEL ORIENTATION -->
+
         <div class="section-label terrain-label">
           MODEL ORIENTATION
         </div>
 
-        <div class="control" data-tip="Rotates the imported model around the X axis in 45-degree steps.">
+        <div
+          class="control"
+          data-tip="Rotates the imported model around the X axis in 45-degree steps."
+        >
           <div class="label-row">
             <label for="rotationX">
               ROTATE X
@@ -248,7 +317,10 @@
           >
         </div>
 
-        <div class="control" data-tip="Rotates the imported model around the Y axis in 45-degree steps.">
+        <div
+          class="control"
+          data-tip="Rotates the imported model around the Y axis in 45-degree steps."
+        >
           <div class="label-row">
             <label for="rotationY">
               ROTATE Y
@@ -275,7 +347,10 @@
           >
         </div>
 
-        <div class="control" data-tip="Rotates the imported model around the Z axis in 45-degree steps.">
+        <div
+          class="control"
+          data-tip="Rotates the imported model around the Z axis in 45-degree steps."
+        >
           <div class="label-row">
             <label for="rotationZ">
               ROTATE Z
@@ -301,6 +376,8 @@
             value="0"
           >
         </div>
+
+        <!-- BUTTONS -->
 
         <div class="button-row">
           <button
@@ -345,6 +422,8 @@
 
       </section>
 
+      <!-- MODEL IMPORT -->
+
       <div id="dropZone">
         DROP 3D TERRAIN HERE
         <span>PLY / STL / OBJ</span>
@@ -385,7 +464,7 @@
 
   <script
     type="module"
-    src="app.js"
+    src="./app.js"
   ></script>
 </body>
 </html>
