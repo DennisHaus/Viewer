@@ -1,30 +1,10 @@
-#interface {
-  position: absolute;
-  z-index: 9999;
-  pointer-events: auto;
-}
-
-#viewer {
-  position: absolute;
-  z-index: 1;
-  pointer-events: none;
-}
-
-button,
-input {
-  position: relative;
-  z-index: 10000;
-  pointer-events: auto;
-}
-
 :root {
   --background: #111311;
-  --panel: rgba(17, 19, 17, 0.91);
+  --panel: rgba(17, 19, 17, 0.92);
   --text: #e8e8df;
   --muted: #999d91;
   --line: #3d433b;
   --accent: #c6d37a;
-  --particle: #d7df88;
 }
 
 * {
@@ -33,9 +13,9 @@ input {
 
 html,
 body {
-  margin: 0;
   width: 100%;
   height: 100%;
+  margin: 0;
   overflow: hidden;
   background: var(--background);
   color: var(--text);
@@ -47,14 +27,16 @@ body {
 }
 
 #app {
+  position: relative;
   width: 100vw;
   height: 100vh;
-  position: relative;
 }
 
 #viewer {
   position: absolute;
   inset: 0;
+  z-index: 1;
+  pointer-events: none;
 }
 
 #viewer canvas {
@@ -68,18 +50,19 @@ body {
   z-index: 10;
   top: 24px;
   left: 24px;
-  width: 280px;
+  width: 290px;
   padding: 18px;
   background: var(--panel);
   border: 1px solid var(--line);
   backdrop-filter: blur(10px);
+  pointer-events: auto;
 }
 
 .eyebrow {
+  margin-bottom: 15px;
   color: var(--accent);
   font-size: 10px;
   letter-spacing: 0.14em;
-  margin-bottom: 15px;
 }
 
 h1 {
@@ -91,15 +74,15 @@ h1 {
 }
 
 .description {
+  max-width: 235px;
+  margin: 18px 0 28px;
   color: var(--muted);
   line-height: 1.45;
-  margin: 18px 0 28px;
-  max-width: 230px;
 }
 
 .controls {
-  border-top: 1px solid var(--line);
   padding-top: 18px;
+  border-top: 1px solid var(--line);
 }
 
 .control {
@@ -108,8 +91,8 @@ h1 {
 
 .label-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 8px;
 }
 
@@ -133,20 +116,20 @@ input[type="range"] {
 }
 
 input[type="range"]::-webkit-slider-thumb {
-  appearance: none;
   width: 11px;
   height: 11px;
+  appearance: none;
+  border: 0;
   border-radius: 50%;
   background: var(--accent);
-  border: none;
 }
 
 input[type="range"]::-moz-range-thumb {
   width: 11px;
   height: 11px;
+  border: 0;
   border-radius: 50%;
   background: var(--accent);
-  border: none;
 }
 
 .button-row {
@@ -161,7 +144,7 @@ input[type="range"]::-moz-range-thumb {
 
 button {
   flex: 1;
-  min-height: 30px;
+  min-height: 31px;
   padding: 7px 8px;
   border: 1px solid var(--line);
   background: transparent;
@@ -172,18 +155,53 @@ button {
 }
 
 button:hover {
+  border-color: var(--accent);
   background: var(--accent);
   color: #171914;
+}
+
+#dropZone {
+  margin-top: 20px;
+  padding: 15px 10px;
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  text-align: center;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  line-height: 1.5;
+  transition: 0.2s ease;
+  cursor: pointer;
+}
+
+#dropZone span {
+  display: block;
+  max-width: 100%;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--accent);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#dropZone.drag-over {
   border-color: var(--accent);
+  background: var(--accent);
+  color: #111;
+}
+
+#dropZone.loaded {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 footer {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  border-top: 1px solid var(--line);
   margin-top: 25px;
   padding-top: 12px;
+  border-top: 1px solid var(--line);
   color: var(--muted);
   font-size: 9px;
   letter-spacing: 0.1em;
