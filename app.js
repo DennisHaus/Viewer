@@ -89,7 +89,7 @@ function setStatus(text) {
 const scene = new THREE.Scene();
 
 scene.background =
-  new THREE.Color(0x0c1b1d);
+  new THREE.Color(0x000000);
 
 const camera =
   new THREE.PerspectiveCamera(
