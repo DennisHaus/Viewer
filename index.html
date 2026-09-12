@@ -57,7 +57,7 @@
 
             <div
               class="control"
-              data-tip="Controls the internal friction between sediment particles."
+              data-tip="Controls friction between individual sediment particles."
             >
               <div class="label-row">
                 <label for="materialFriction">
@@ -88,7 +88,7 @@
 
             <div
               class="control"
-              data-tip="Controls friction between the sediment and the terrain surface."
+              data-tip="Controls resistance between the sediment and the terrain surface."
             >
               <div class="label-row">
                 <label for="terrainFriction">
@@ -113,6 +113,37 @@
                 max="1"
                 step="0.01"
                 value="0.65"
+              >
+            </div>
+
+
+            <div
+              class="control"
+              data-tip="Controls how strongly nearby particles attract one another and form stable piles."
+            >
+              <div class="label-row">
+                <label for="particleCohesion">
+                  PARTICLE COHESION
+                </label>
+
+                <input
+                  id="particleCohesionNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value="0.35"
+                >
+              </div>
+
+              <input
+                id="particleCohesion"
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value="0.35"
               >
             </div>
 
@@ -263,7 +294,7 @@
 
             <div
               class="control"
-              data-tip="Scales the terrain depth axis. The default value is 1.0."
+              data-tip="Scales the imported model depth axis. The default is 1.0."
             >
               <div class="label-row">
                 <label for="depthScale">
@@ -304,7 +335,7 @@
 
             <div
               class="control"
-              data-tip="Total physical volume of source sediment."
+              data-tip="Total physical source material volume."
             >
               <div class="label-row">
                 <label for="sourceVolume">
@@ -347,8 +378,8 @@
                   class="numeric-input"
                   type="number"
                   min="100"
-                  max="1000"
-                  step="10"
+                  max="100000"
+                  step="100"
                   value="100"
                 >
               </div>
@@ -357,8 +388,8 @@
                 id="sourceArea"
                 type="range"
                 min="100"
-                max="1000"
-                step="10"
+                max="100000"
+                step="100"
                 value="100"
               >
             </div>
@@ -366,7 +397,7 @@
 
             <div
               class="control"
-              data-tip="Number of particles generated per cubic metre of source material."
+              data-tip="Number of simulated particles generated per cubic metre of source material."
             >
               <div class="label-row">
                 <label for="particleDensity">
@@ -416,7 +447,38 @@
 
             <div
               class="control"
-              data-tip="Display multiplier for point particles. The soup uses the physical particle radius."
+              data-tip="Controls the distance between particle centers at which the soup remains visually connected."
+            >
+              <div class="label-row">
+                <label for="soupLinkRange">
+                  SOUP LINK RANGE
+                </label>
+
+                <input
+                  id="soupLinkRangeNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="0.75"
+                  max="4"
+                  step="0.05"
+                  value="1.25"
+                >
+              </div>
+
+              <input
+                id="soupLinkRange"
+                type="range"
+                min="0.75"
+                max="4"
+                step="0.05"
+                value="1.25"
+              >
+            </div>
+
+
+            <div
+              class="control"
+              data-tip="Visual scale for point particles only. Physical particle volume remains unchanged."
             >
               <div class="label-row">
                 <label for="particleSize">

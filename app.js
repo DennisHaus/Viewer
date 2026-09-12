@@ -44,6 +44,12 @@ const terrainFrictionInput =
 const terrainFrictionNumber =
   $("terrainFrictionNumber");
 
+const particleCohesionInput =
+  $("particleCohesion");
+
+const particleCohesionNumber =
+  $("particleCohesionNumber");
+
 const startVelocityInput =
   $("startVelocity");
 
@@ -94,6 +100,12 @@ const particleDensityNumber =
 
 const particleVisualizationInput =
   $("particleVisualization");
+
+const soupLinkRangeInput =
+  $("soupLinkRange");
+
+const soupLinkRangeNumber =
+  $("soupLinkRangeNumber");
 
 const particleSizeInput =
   $("particleSize");
@@ -295,6 +307,7 @@ scene.add(
 const params = {
   materialFriction: 0.35,
   terrainFriction: 0.65,
+  particleCohesion: 0.35,
   startVelocity: 1,
 
   terrainResolution: 256,
@@ -308,6 +321,7 @@ const params = {
   particleDensity: 1,
 
   particleVisualization: "points",
+  soupLinkRange: 1.25,
   particleSize: 1,
 
   launchDuration: 2.5,
@@ -321,28 +335,47 @@ const params = {
    CONSTANTS
 ===================================================== */
 
-const TERRAIN_SIZE = 120;
+const TERRAIN_SIZE =
+  600;
 
 const MAX_SIMULATED_PARTICLES =
   30000;
 
-const GRAVITY = 9.81;
+const MAX_SOUP_FIELDS =
+  96;
 
-const COLLISION_ITERATIONS = 3;
+const MAX_SOUP_BALLS_PER_FIELD =
+  320;
 
-const COLLISION_RESTITUTION = 0.0;
+const SOUP_RESOLUTION =
+  32;
+
+const SOUP_MAX_POLYGONS =
+  50000;
+
+const SOUP_UPDATE_INTERVAL =
+  0.08;
+
+const COHESION_STRENGTH =
+  5;
+
+const COHESION_INTERACTION_RADIUS =
+  5;
+
+const GRAVITY =
+  9.81;
+
+const COLLISION_ITERATIONS =
+  3;
+
+const COLLISION_RESTITUTION =
+  0.0;
 
 const DEFAULT_IMPORTED_ROTATION_X =
   -90;
 
-const SOUP_RESOLUTION = 48;
-
-const SOUP_MAX_POLYGONS =
-  240000;
-
-const SURFACE_CLEARANCE = 0.025;
-
-const SOUP_UPDATE_INTERVAL = 0.05;
+const SURFACE_CLEARANCE =
+  0.025;
 
 
 /* =====================================================
@@ -352,39 +385,65 @@ const SOUP_UPDATE_INTERVAL = 0.05;
 let terrainSeed =
   Math.random() * 100000;
 
-let terrainMesh = null;
-let terrainWire = null;
+let terrainMesh =
+  null;
 
-let customTerrain = null;
-let rawModelPoints = null;
-let currentFileName = "";
+let terrainWire =
+  null;
 
-let sourceMarker = null;
-let sourceVolumePreview = null;
+let customTerrain =
+  null;
 
-let particles = [];
+let rawModelPoints =
+  null;
 
-let particleGeometry = null;
-let particleMaterial = null;
-let particlePoints = null;
+let currentFileName =
+  "";
 
-let soupRenderer = null;
-let soupMaterial = null;
+let sourceMarker =
+  null;
 
-let particleCount = 0;
-let parcelVolume = 0;
-let parcelRadius = 0;
-let collisionRadius = 0;
+let sourceVolumePreview =
+  null;
 
-let sourceLayout = null;
+let particles =
+  [];
 
-let simulationStarted = false;
+let particleGeometry =
+  null;
 
-let soupFieldSize = 1;
-let soupUpdateTimer = 0;
+let particleMaterial =
+  null;
 
-const soupFieldCenter =
-  new THREE.Vector3();
+let particlePoints =
+  null;
+
+let soupRenderers =
+  [];
+
+let soupMaterial =
+  null;
+
+let particleCount =
+  0;
+
+let parcelVolume =
+  0;
+
+let parcelRadius =
+  0;
+
+let collisionRadius =
+  0;
+
+let sourceLayout =
+  null;
+
+let simulationStarted =
+  false;
+
+let soupUpdateAccumulator =
+  0;
 
 const modelRotation = {
   x: 0,
@@ -397,7 +456,7 @@ const sourceLocation =
     -TERRAIN_SIZE * 0.3,
     0,
     -TERRAIN_SIZE * 0.35
-);
+  );
 
 
 /* =====================================================
@@ -504,10 +563,6 @@ function getTerrainDepth() {
       ? customTerrain.depth
       : TERRAIN_SIZE;
 
-  /*
-    Depth scaling is applied once,
-    to the final terrain depth.
-  */
   return baseDepth *
     params.modelScale *
     params.depthScale;
@@ -638,7 +693,8 @@ function fractalNoise(
       ) *
       amplitude;
 
-    weight += amplitude;
+    weight +=
+      amplitude;
 
     frequency *= 2;
     amplitude *= 0.5;
@@ -914,8 +970,11 @@ function createTerrain() {
     terrainWire
   );
 
-  terrainMesh = null;
-  terrainWire = null;
+  terrainMesh =
+    null;
+
+  terrainWire =
+    null;
 
   const resolution =
     clamp(
@@ -1137,7 +1196,7 @@ function updateSourceVisuals() {
 
   sourceLocation.y =
     groundY +
-    SURFACE_CLEARANCE;
+    0.025;
 
   if (sourceMarker) {
     sourceMarker.position.copy(
@@ -1221,23 +1280,14 @@ function updateParticleCountStatus() {
 ===================================================== */
 
 function getParticleRadius() {
+  /*
+    Each particle represents a fixed volume.
+  */
   return Math.cbrt(
     parcelVolume *
     3 /
     (4 * Math.PI)
   );
-}
-
-function getParticleContactRadius() {
-  if (
-    params.particleVisualization ===
-    "points"
-  ) {
-    return parcelRadius *
-      params.particleSize;
-  }
-
-  return parcelRadius;
 }
 
 function getParticleGroundY(
@@ -1247,8 +1297,8 @@ function getParticleGroundY(
     particle.x,
     particle.z
   ) +
-    getParticleContactRadius() +
-    SURFACE_CLEARANCE;
+    parcelRadius +
+    0.025;
 }
 
 function terrainGradient(
@@ -1349,20 +1399,16 @@ function getDownhillVelocity(
 
 
 /* =====================================================
-   SOURCE STACK
+   INITIAL SOURCE STACK
 ===================================================== */
 
 function createSourceLayout() {
   const side =
     getReleaseSideLength();
 
-  /*
-    A slightly reduced collision spacing lets
-    the source form a compact pile.
-  */
   const spacing =
     Math.max(
-      collisionRadius * 1.85,
+      collisionRadius * 2.05,
       0.01
     );
 
@@ -1393,7 +1439,7 @@ function createSourceLayout() {
 
   const verticalSpacing =
     Math.max(
-      collisionRadius * 1.85,
+      collisionRadius * 2.05,
       targetHeight / layers
     );
 
@@ -1475,7 +1521,7 @@ function placeParticleAtSource(
 
   particle.y =
     groundY +
-    getParticleContactRadius() +
+    parcelRadius +
     layer *
     verticalSpacing;
 
@@ -1552,7 +1598,7 @@ function resetParticle(
 
 
 /* =====================================================
-   POINT PARTICLES
+   PARTICLE RENDERING
 ===================================================== */
 
 function getProjectionScale() {
@@ -1730,9 +1776,7 @@ function createPointParticles() {
 }
 
 function syncPointParticles() {
-  if (
-    !particleGeometry
-  ) {
+  if (!particleGeometry) {
     return;
   }
 
@@ -1788,75 +1832,22 @@ function updatePointMaterial() {
 
 
 /* =====================================================
-   SOUP
+   SPATIAL HASH
 ===================================================== */
 
-function getSoupBounds() {
-  const box =
-    new THREE.Box3();
-
-  for (
-    const particle of particles
-  ) {
-    box.expandByPoint(
-      new THREE.Vector3(
-        particle.x,
-        particle.y,
-        particle.z
-      )
-    );
-  }
-
-  const margin =
-    Math.max(
-      parcelRadius * 4,
-      sourceLayout?.spacing || 1,
-      1
-    );
-
-  box.expandByScalar(
-    margin
-  );
-
-  const size =
-    new THREE.Vector3();
-
-  const center =
-    new THREE.Vector3();
-
-  box.getSize(
-    size
-  );
-
-  box.getCenter(
-    center
-  );
-
-  soupFieldSize =
-    Math.max(
-      size.x,
-      size.y,
-      size.z,
-      1
-    );
-
-  soupFieldCenter.copy(
-    center
-  );
+function getCellKey(
+  x,
+  y,
+  z
+) {
+  return `${x}:${y}:${z}`;
 }
 
-function buildSoupClusters() {
-  const clusters =
+function buildParticleGrid(
+  cellSize
+) {
+  const grid =
     new Map();
-
-  const cellSize =
-    Math.max(
-      sourceLayout?.spacing || 0,
-      parcelRadius * 1.5,
-      soupFieldSize /
-        SOUP_RESOLUTION *
-        1.5
-    );
 
   for (
     let i = 0;
@@ -1885,394 +1876,259 @@ function buildSoupClusters() {
       );
 
     const key =
-      `${cellX}:${cellY}:${cellZ}`;
+      getCellKey(
+        cellX,
+        cellY,
+        cellZ
+      );
 
-    let cluster =
-      clusters.get(
+    let bucket =
+      grid.get(
         key
       );
 
-    if (!cluster) {
-      cluster = {
-        x: 0,
-        y: 0,
-        z: 0,
-        count: 0
-      };
+    if (!bucket) {
+      bucket = [];
 
-      clusters.set(
+      grid.set(
         key,
-        cluster
+        bucket
       );
     }
 
-    cluster.x +=
-      particle.x;
-
-    cluster.y +=
-      particle.y;
-
-    cluster.z +=
-      particle.z;
-
-    cluster.count++;
-  }
-
-  const result = [];
-
-  for (
-    const cluster of clusters.values()
-  ) {
-    const count =
-      cluster.count;
-
-    result.push({
-      x:
-        cluster.x /
-        count,
-
-      y:
-        cluster.y /
-        count,
-
-      z:
-        cluster.z /
-        count,
-
-      volume:
-        count *
-        parcelVolume
-    });
-  }
-
-  return {
-    clusters: result,
-    cellSize
-  };
-}
-
-function createSoupRenderer() {
-  soupMaterial =
-    new THREE.MeshStandardMaterial({
-      color: 0x9bd7d0,
-      roughness: 0.82,
-      metalness: 0,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
-
-  soupRenderer =
-    new MarchingCubes(
-      SOUP_RESOLUTION,
-      soupMaterial,
-      false,
-      false,
-      SOUP_MAX_POLYGONS
+    bucket.push(
+      i
     );
+  }
 
-  soupRenderer.enableUvs =
-    false;
-
-  soupRenderer.enableColors =
-    false;
-
-  soupRenderer.isolation =
-    80;
-
-  soupRenderer.frustumCulled =
-    false;
-
-  soupRenderer.renderOrder =
-    25;
-
-  soupRenderer.visible =
-    false;
-
-  scene.add(
-    soupRenderer
-  );
+  return grid;
 }
 
-function updateSoupRenderer(
-  force = false
+
+/* =====================================================
+   PARTICLE COHESION
+===================================================== */
+
+function applyCohesionForces(
+  deltaTime
 ) {
+  const cohesion =
+    params.particleCohesion;
+
   if (
-    !soupRenderer ||
-    !simulationStarted ||
-    !particles.length
+    cohesion <= 0 ||
+    particles.length < 2
   ) {
     return;
   }
 
-  if (!force) {
-    soupUpdateTimer +=
-      clock.getDelta();
+  const minimumDistance =
+    collisionRadius * 2;
 
-    if (
-      soupUpdateTimer <
-      SOUP_UPDATE_INTERVAL
-    ) {
-      return;
-    }
-
-    soupUpdateTimer = 0;
-  }
-
-  getSoupBounds();
-
-  /*
-    MarchingCubes is centered around its
-    local origin. Therefore the renderer
-    must be placed at the field center,
-    not the field minimum.
-  */
-  soupRenderer.position.copy(
-    soupFieldCenter
-  );
-
-  soupRenderer.scale.set(
-    soupFieldSize,
-    soupFieldSize,
-    soupFieldSize
-  );
-
-  soupRenderer.reset();
-
-  const soupData =
-    buildSoupClusters();
-
-  const subtract =
-    12;
-
-  for (
-    const cluster of soupData.clusters
-  ) {
-    const normalizedX =
-      clamp(
-        (
-          cluster.x -
-          (
-            soupFieldCenter.x -
-            soupFieldSize * 0.5
-          )
-        ) /
-        soupFieldSize,
-        0.001,
-        0.999
-      );
-
-    const normalizedZ =
-      clamp(
-        (
-          cluster.z -
-          (
-            soupFieldCenter.z -
-            soupFieldSize * 0.5
-          )
-        ) /
-        soupFieldSize,
-        0.001,
-        0.999
-      );
-
-    const physicalRadius =
-      Math.cbrt(
-        cluster.volume *
-        3 /
-        (4 * Math.PI)
-      );
-
-    const blobRadius =
-      Math.max(
-        physicalRadius * 1.2,
-        soupData.cellSize * 0.75,
-        soupFieldSize /
-          SOUP_RESOLUTION *
-          1.75
-      );
-
-    /*
-      Move the metaball upward so its
-      lower surface does not disappear
-      below the terrain.
-    */
-    const liftedY =
-      cluster.y +
-      Math.max(
-        0,
-        blobRadius -
-        parcelRadius
-      ) +
-      SURFACE_CLEARANCE;
-
-    const normalizedY =
-      clamp(
-        (
-          liftedY -
-          (
-            soupFieldCenter.y -
-            soupFieldSize * 0.5
-          )
-        ) /
-        soupFieldSize,
-        0.001,
-        0.999
-      );
-
-    const normalizedRadius =
-      clamp(
-        blobRadius /
-          soupFieldSize,
-        0.01,
-        0.2
-      );
-
-    /*
-      The minimum radius prevents the soup
-      from disappearing as the material spreads.
-    */
-    const strength =
-      Math.max(
-        0.02,
-        (
-          soupRenderer.isolation +
-          subtract
-        ) *
-        normalizedRadius *
-        normalizedRadius *
-        1.35
-      );
-
-    soupRenderer.addBall(
-      normalizedX,
-      normalizedY,
-      normalizedZ,
-      strength,
-      subtract
+  const interactionDistance =
+    minimumDistance *
+    (
+      1.5 +
+      cohesion *
+      COHESION_INTERACTION_RADIUS /
+      2
     );
-  }
 
-  soupRenderer.update();
-
-  soupRenderer.visible =
-    true;
-}
-
-
-/* =====================================================
-   VISIBILITY
-===================================================== */
-
-function updateParticleVisibility() {
-  if (particlePoints) {
-    particlePoints.visible =
-      simulationStarted &&
-      params.particleVisualization ===
-      "points";
-  }
-
-  if (soupRenderer) {
-    soupRenderer.visible =
-      simulationStarted &&
-      params.particleVisualization ===
-      "soup";
-  }
-
-  if (sourceMarker) {
-    sourceMarker.visible =
-      !simulationStarted;
-  }
-
-  if (sourceVolumePreview) {
-    sourceVolumePreview.visible =
-      !simulationStarted;
-  }
-}
-
-
-/* =====================================================
-   PARTICLE CREATION
-===================================================== */
-
-function createParticles() {
-  disposeObject(
-    particlePoints
-  );
-
-  disposeObject(
-    soupRenderer
-  );
-
-  particlePoints = null;
-  particleGeometry = null;
-  particleMaterial = null;
-
-  soupRenderer = null;
-  soupMaterial = null;
-
-  particleCount =
-    getParticleCount();
-
-  parcelVolume =
-    params.sourceVolume /
-    particleCount;
-
-  parcelRadius =
-    getParticleRadius();
-
-  /*
-    A slightly smaller collision radius allows
-    stable packing while the represented
-    particle volume remains unchanged.
-  */
-  collisionRadius =
-    parcelRadius * 0.92;
-
-  sourceLayout =
-    createSourceLayout();
-
-  particles = [];
+  const grid =
+    buildParticleGrid(
+      interactionDistance
+    );
 
   for (
     let i = 0;
-    i < particleCount;
+    i < particles.length;
     i++
   ) {
-    particles.push(
-      createRandomParticle(
-        i
-      )
-    );
-  }
+    const a =
+      particles[i];
 
-  if (
-    params.particleVisualization ===
-    "soup"
-  ) {
-    createSoupRenderer();
-  } else {
-    createPointParticles();
-  }
+    const cellX =
+      Math.floor(
+        a.x /
+        interactionDistance
+      );
 
-  soupUpdateTimer = 0;
+    const cellY =
+      Math.floor(
+        a.y /
+        interactionDistance
+      );
 
-  updateParticleVisibility();
-  updateParticleCountStatus();
+    const cellZ =
+      Math.floor(
+        a.z /
+        interactionDistance
+      );
 
-  if (
-    simulationStarted &&
-    params.particleVisualization ===
-    "soup"
-  ) {
-    updateSoupRenderer(
-      true
-    );
+    for (
+      let offsetX = -1;
+      offsetX <= 1;
+      offsetX++
+    ) {
+      for (
+        let offsetY = -1;
+        offsetY <= 1;
+        offsetY++
+      ) {
+        for (
+          let offsetZ = -1;
+          offsetZ <= 1;
+          offsetZ++
+        ) {
+          const bucket =
+            grid.get(
+              getCellKey(
+                cellX + offsetX,
+                cellY + offsetY,
+                cellZ + offsetZ
+              )
+            );
+
+          if (!bucket) {
+            continue;
+          }
+
+          for (
+            const j of bucket
+          ) {
+            if (j <= i) {
+              continue;
+            }
+
+            const b =
+              particles[j];
+
+            const dx =
+              b.x - a.x;
+
+            const dy =
+              b.y - a.y;
+
+            const dz =
+              b.z - a.z;
+
+            const distance =
+              Math.hypot(
+                dx,
+                dy,
+                dz
+              );
+
+            if (
+              distance <=
+              minimumDistance ||
+              distance >=
+              interactionDistance
+            ) {
+              continue;
+            }
+
+            const nx =
+              dx / distance;
+
+            const ny =
+              dy / distance;
+
+            const nz =
+              dz / distance;
+
+            const falloff =
+              (
+                interactionDistance -
+                distance
+              ) /
+              (
+                interactionDistance -
+                minimumDistance
+              );
+
+            const force =
+              cohesion *
+              COHESION_STRENGTH *
+              falloff *
+              falloff *
+              deltaTime;
+
+            /*
+              Equal and opposite attraction keeps
+              the total motion balanced.
+            */
+            a.vx +=
+              nx * force;
+
+            a.vy +=
+              ny * force;
+
+            a.vz +=
+              nz * force;
+
+            b.vx -=
+              nx * force;
+
+            b.vy -=
+              ny * force;
+
+            b.vz -=
+              nz * force;
+
+            /*
+              Small velocity matching helps particles
+              behave like a cohesive material instead
+              of rapidly separating after contact.
+            */
+            const alignment =
+              cohesion *
+              falloff *
+              deltaTime *
+              0.12;
+
+            const relativeVx =
+              b.vx - a.vx;
+
+            const relativeVy =
+              b.vy - a.vy;
+
+            const relativeVz =
+              b.vz - a.vz;
+
+            a.vx +=
+              relativeVx *
+              alignment;
+
+            a.vy +=
+              relativeVy *
+              alignment;
+
+            a.vz +=
+              relativeVz *
+              alignment;
+
+            b.vx -=
+              relativeVx *
+              alignment;
+
+            b.vy -=
+              relativeVy *
+              alignment;
+
+            b.vz -=
+              relativeVz *
+              alignment;
+          }
+        }
+      }
+    }
   }
 }
 
 
 /* =====================================================
-   PARTICLE COLLISIONS
+   TERRAIN CONTACT
 ===================================================== */
 
 function applyTerrainContact(
@@ -2307,10 +2163,6 @@ function applyTerrainContact(
   if (
     touchingGround
   ) {
-    /*
-      Terrain friction controls sliding
-      over the terrain surface.
-    */
     const damping =
       Math.exp(
         -params.terrainFriction *
@@ -2335,13 +2187,10 @@ function applyTerrainContact(
   }
 }
 
-function collisionCellKey(
-  x,
-  y,
-  z
-) {
-  return `${x}:${y}:${z}`;
-}
+
+/* =====================================================
+   PARTICLE COLLISIONS
+===================================================== */
 
 function resolveParticleCollisions() {
   if (
@@ -2350,66 +2199,17 @@ function resolveParticleCollisions() {
     return;
   }
 
+  const minimumDistance =
+    collisionRadius * 2;
+
   const cellSize =
-    Math.max(
-      0.001,
-      collisionRadius * 2.1
-    );
+    minimumDistance *
+    1.1;
 
   const grid =
-    new Map();
-
-  for (
-    let i = 0;
-    i < particles.length;
-    i++
-  ) {
-    const particle =
-      particles[i];
-
-    const cellX =
-      Math.floor(
-        particle.x /
-        cellSize
-      );
-
-    const cellY =
-      Math.floor(
-        particle.y /
-        cellSize
-      );
-
-    const cellZ =
-      Math.floor(
-        particle.z /
-        cellSize
-      );
-
-    const key =
-      collisionCellKey(
-        cellX,
-        cellY,
-        cellZ
-      );
-
-    let bucket =
-      grid.get(
-        key
-      );
-
-    if (!bucket) {
-      bucket = [];
-
-      grid.set(
-        key,
-        bucket
-      );
-    }
-
-    bucket.push(
-      i
+    buildParticleGrid(
+      cellSize
     );
-  }
 
   for (
     let i = 0;
@@ -2452,16 +2252,13 @@ function resolveParticleCollisions() {
           offsetZ <= 1;
           offsetZ++
         ) {
-          const key =
-            collisionCellKey(
-              cellX + offsetX,
-              cellY + offsetY,
-              cellZ + offsetZ
-            );
-
           const bucket =
             grid.get(
-              key
+              getCellKey(
+                cellX + offsetX,
+                cellY + offsetY,
+                cellZ + offsetZ
+              )
             );
 
           if (!bucket) {
@@ -2469,16 +2266,9 @@ function resolveParticleCollisions() {
           }
 
           for (
-            let bucketIndex = 0;
-            bucketIndex < bucket.length;
-            bucketIndex++
+            const j of bucket
           ) {
-            const j =
-              bucket[bucketIndex];
-
-            if (
-              j <= i
-            ) {
+            if (j <= i) {
               continue;
             }
 
@@ -2493,9 +2283,6 @@ function resolveParticleCollisions() {
 
             let dz =
               b.z - a.z;
-
-            const minimumDistance =
-              collisionRadius * 2;
 
             let distance =
               Math.hypot(
@@ -2537,6 +2324,11 @@ function resolveParticleCollisions() {
               penetration *
               0.5;
 
+            /*
+              Position correction prevents
+              particles from occupying the same
+              physical volume.
+            */
             a.x -=
               nx *
               correction;
@@ -2610,10 +2402,6 @@ function resolveParticleCollisions() {
                 nz *
                 normalImpulse;
 
-              /*
-                Material friction controls
-                tangential collision damping.
-              */
               const tangentVx =
                 relativeVx -
                 relativeNormalVelocity *
@@ -2848,6 +2636,15 @@ function updateSimulation(
       settlingThreshold;
   }
 
+  /*
+    Cohesion is applied before collision
+    resolution. This makes nearby particles
+    attract, then prevents overlap.
+  */
+  applyCohesionForces(
+    deltaTime
+  );
+
   for (
     let iteration = 0;
     iteration < COLLISION_ITERATIONS;
@@ -2915,7 +2712,649 @@ function updateSimulation(
   ) {
     syncPointParticles();
   } else {
+    soupUpdateAccumulator +=
+      deltaTime;
+
     updateSoupRenderer();
+  }
+}
+
+
+/* =====================================================
+   SOUP RENDERING
+===================================================== */
+
+function getSoupLinkRadius() {
+  /*
+    At link range 1.0, particles touch when
+    their centers are approximately two physical
+    particle radii apart.
+  */
+  return parcelRadius *
+    params.soupLinkRange;
+}
+
+function clearSoupRenderers() {
+  for (
+    const rendererObject of soupRenderers
+  ) {
+    if (rendererObject.parent) {
+      rendererObject.parent.remove(
+        rendererObject
+      );
+    }
+
+    if (rendererObject.geometry) {
+      rendererObject.geometry.dispose();
+    }
+  }
+
+  soupRenderers =
+    [];
+
+  if (soupMaterial) {
+    soupMaterial.dispose();
+    soupMaterial =
+      null;
+  }
+}
+
+function createSoupRenderer(
+  count
+) {
+  if (!soupMaterial) {
+    soupMaterial =
+      new THREE.MeshStandardMaterial({
+        color: 0x9bd7d0,
+        roughness: 0.82,
+        metalness: 0,
+        side: THREE.DoubleSide,
+        depthWrite: true
+      });
+  }
+
+  while (
+    soupRenderers.length <
+    count
+  ) {
+    const rendererObject =
+      new MarchingCubes(
+        SOUP_RESOLUTION,
+        soupMaterial,
+        false,
+        false,
+        SOUP_MAX_POLYGONS
+      );
+
+    rendererObject.enableUvs =
+      false;
+
+    rendererObject.enableColors =
+      false;
+
+    rendererObject.isolation =
+      80;
+
+    rendererObject.frustumCulled =
+      false;
+
+    rendererObject.renderOrder =
+      25;
+
+    rendererObject.visible =
+      false;
+
+    soupRenderers.push(
+      rendererObject
+    );
+
+    scene.add(
+      rendererObject
+    );
+  }
+
+  while (
+    soupRenderers.length >
+    count
+  ) {
+    const rendererObject =
+      soupRenderers.pop();
+
+    if (rendererObject.parent) {
+      rendererObject.parent.remove(
+        rendererObject
+      );
+    }
+
+    if (rendererObject.geometry) {
+      rendererObject.geometry.dispose();
+    }
+  }
+}
+
+function getSoupChunkData() {
+  const linkRadius =
+    getSoupLinkRadius();
+
+  /*
+    A local field prevents the entire landscape
+    from being represented by one low-resolution
+    Marching Cubes volume.
+  */
+  const chunkSize =
+    Math.max(
+      8,
+      linkRadius *
+      SOUP_RESOLUTION *
+      0.55
+    );
+
+  const buckets =
+    new Map();
+
+  for (
+    let i = 0;
+    i < particles.length;
+    i++
+  ) {
+    const particle =
+      particles[i];
+
+    const cellX =
+      Math.floor(
+        particle.x /
+        chunkSize
+      );
+
+    const cellY =
+      Math.floor(
+        particle.y /
+        chunkSize
+      );
+
+    const cellZ =
+      Math.floor(
+        particle.z /
+        chunkSize
+      );
+
+    const key =
+      getCellKey(
+        cellX,
+        cellY,
+        cellZ
+      );
+
+    let bucket =
+      buckets.get(
+        key
+      );
+
+    if (!bucket) {
+      bucket = {
+        cellX,
+        cellY,
+        cellZ,
+        indices: []
+      };
+
+      buckets.set(
+        key,
+        bucket
+      );
+    }
+
+    bucket.indices.push(
+      i
+    );
+  }
+
+  const bucketList =
+    Array.from(
+      buckets.values()
+    );
+
+  /*
+    Limit the number of local fields while
+    preserving a spread across the terrain.
+  */
+  let selectedBuckets =
+    bucketList;
+
+  if (
+    selectedBuckets.length >
+    MAX_SOUP_FIELDS
+  ) {
+    const stride =
+      Math.ceil(
+        selectedBuckets.length /
+        MAX_SOUP_FIELDS
+      );
+
+    selectedBuckets =
+      selectedBuckets.filter(
+        (_, index) => {
+          return index % stride === 0;
+        }
+      );
+  }
+
+  const margin =
+    linkRadius *
+    2.5;
+
+  const fieldSize =
+    chunkSize +
+    margin * 2;
+
+  const result = [];
+
+  for (
+    const bucket of selectedBuckets
+  ) {
+    const center =
+      new THREE.Vector3(
+        (
+          bucket.cellX +
+          0.5
+        ) *
+        chunkSize,
+
+        (
+          bucket.cellY +
+          0.5
+        ) *
+        chunkSize,
+
+        (
+          bucket.cellZ +
+          0.5
+        ) *
+        chunkSize
+      );
+
+    const minX =
+      center.x -
+      fieldSize * 0.5;
+
+    const maxX =
+      center.x +
+      fieldSize * 0.5;
+
+    const minY =
+      center.y -
+      fieldSize * 0.5;
+
+    const maxY =
+      center.y +
+      fieldSize * 0.5;
+
+    const minZ =
+      center.z -
+      fieldSize * 0.5;
+
+    const maxZ =
+      center.z +
+      fieldSize * 0.5;
+
+    const nearbyIndices =
+      [];
+
+    /*
+      Include particles in neighboring cells
+      so metaballs are not cut at field edges.
+    */
+    for (
+      let offsetX = -1;
+      offsetX <= 1;
+      offsetX++
+    ) {
+      for (
+        let offsetY = -1;
+        offsetY <= 1;
+        offsetY++
+      ) {
+        for (
+          let offsetZ = -1;
+          offsetZ <= 1;
+          offsetZ++
+        ) {
+          const nearbyBucket =
+            buckets.get(
+              getCellKey(
+                bucket.cellX + offsetX,
+                bucket.cellY + offsetY,
+                bucket.cellZ + offsetZ
+              )
+            );
+
+          if (!nearbyBucket) {
+            continue;
+          }
+
+          for (
+            const particleIndex of nearbyBucket.indices
+          ) {
+            const particle =
+              particles[particleIndex];
+
+            if (
+              particle.x >= minX &&
+              particle.x <= maxX &&
+              particle.y >= minY &&
+              particle.y <= maxY &&
+              particle.z >= minZ &&
+              particle.z <= maxZ
+            ) {
+              nearbyIndices.push(
+                particleIndex
+              );
+            }
+          }
+        }
+      }
+    }
+
+    /*
+      Limit balls per field for performance.
+      This does not change the simulation's
+      physical particle count.
+    */
+    let selectedIndices =
+      nearbyIndices;
+
+    if (
+      selectedIndices.length >
+      MAX_SOUP_BALLS_PER_FIELD
+    ) {
+      const stride =
+        Math.ceil(
+          selectedIndices.length /
+          MAX_SOUP_BALLS_PER_FIELD
+        );
+
+      selectedIndices =
+        selectedIndices.filter(
+          (_, index) => {
+            return index % stride === 0;
+          }
+        );
+    }
+
+    result.push({
+      center,
+      fieldSize,
+      minX,
+      minY,
+      minZ,
+      indices: selectedIndices,
+      linkRadius
+    });
+  }
+
+  return result;
+}
+
+function updateSoupRenderer(
+  force = false
+) {
+  if (
+    !simulationStarted ||
+    !particles.length
+  ) {
+    return;
+  }
+
+  if (
+    !force &&
+    soupUpdateAccumulator <
+    SOUP_UPDATE_INTERVAL
+  ) {
+    return;
+  }
+
+  soupUpdateAccumulator =
+    0;
+
+  const chunks =
+    getSoupChunkData();
+
+  createSoupRenderer(
+    chunks.length
+  );
+
+  const subtract =
+    12;
+
+  for (
+    let chunkIndex = 0;
+    chunkIndex < chunks.length;
+    chunkIndex++
+  ) {
+    const chunk =
+      chunks[chunkIndex];
+
+    const rendererObject =
+      soupRenderers[
+        chunkIndex
+      ];
+
+    rendererObject.position.copy(
+      chunk.center
+    );
+
+    rendererObject.scale.set(
+      chunk.fieldSize,
+      chunk.fieldSize,
+      chunk.fieldSize
+    );
+
+    rendererObject.reset();
+
+    const normalizedRadius =
+      chunk.linkRadius /
+      chunk.fieldSize;
+
+    /*
+      This formula makes the iso-surface
+      radius approximately equal to the
+      selected link radius. It avoids the
+      previous oversized soup.
+    */
+    const strength =
+      (
+        rendererObject.isolation +
+        subtract
+      ) *
+      normalizedRadius *
+      normalizedRadius;
+
+    for (
+      const particleIndex of chunk.indices
+    ) {
+      const particle =
+        particles[particleIndex];
+
+      /*
+        Lift the metaball center slightly
+        so its lower edge does not disappear
+        below the terrain surface.
+      */
+      const groundY =
+        terrainHeight(
+          particle.x,
+          particle.z
+        );
+
+      const minimumY =
+        groundY +
+        chunk.linkRadius +
+        0.025;
+
+      const centerY =
+        Math.max(
+          particle.y,
+          minimumY
+        );
+
+      const normalizedX =
+        clamp(
+          (
+            particle.x -
+            chunk.minX
+          ) /
+          chunk.fieldSize,
+          0.001,
+          0.999
+        );
+
+      const normalizedY =
+        clamp(
+          (
+            centerY -
+            chunk.minY
+          ) /
+          chunk.fieldSize,
+          0.001,
+          0.999
+        );
+
+      const normalizedZ =
+        clamp(
+          (
+            particle.z -
+            chunk.minZ
+          ) /
+          chunk.fieldSize,
+          0.001,
+          0.999
+        );
+
+      rendererObject.addBall(
+        normalizedX,
+        normalizedY,
+        normalizedZ,
+        strength,
+        subtract
+      );
+    }
+
+    rendererObject.update();
+    rendererObject.visible =
+      true;
+  }
+}
+
+
+/* =====================================================
+   VISIBILITY
+===================================================== */
+
+function updateParticleVisibility() {
+  if (particlePoints) {
+    particlePoints.visible =
+      simulationStarted &&
+      params.particleVisualization ===
+      "points";
+  }
+
+  for (
+    const rendererObject of soupRenderers
+  ) {
+    rendererObject.visible =
+      simulationStarted &&
+      params.particleVisualization ===
+      "soup";
+  }
+
+  if (sourceMarker) {
+    sourceMarker.visible =
+      !simulationStarted;
+  }
+
+  if (sourceVolumePreview) {
+    sourceVolumePreview.visible =
+      !simulationStarted;
+  }
+}
+
+
+/* =====================================================
+   PARTICLE CREATION
+===================================================== */
+
+function createParticles() {
+  disposeObject(
+    particlePoints
+  );
+
+  particlePoints =
+    null;
+
+  particleGeometry =
+    null;
+
+  particleMaterial =
+    null;
+
+  clearSoupRenderers();
+
+  particleCount =
+    getParticleCount();
+
+  /*
+    The total represented volume remains
+    equal to sourceVolume.
+  */
+  parcelVolume =
+    params.sourceVolume /
+    particleCount;
+
+  parcelRadius =
+    getParticleRadius();
+
+  collisionRadius =
+    parcelRadius;
+
+  sourceLayout =
+    createSourceLayout();
+
+  particles =
+    [];
+
+  for (
+    let i = 0;
+    i < particleCount;
+    i++
+  ) {
+    particles.push(
+      createRandomParticle(
+        i
+      )
+    );
+  }
+
+  if (
+    params.particleVisualization ===
+    "points"
+  ) {
+    createPointParticles();
+  }
+
+  soupUpdateAccumulator =
+    0;
+
+  updateParticleVisibility();
+  updateParticleCountStatus();
+
+  if (
+    simulationStarted &&
+    params.particleVisualization ===
+    "soup"
+  ) {
+    updateSoupRenderer(
+      true
+    );
   }
 }
 
@@ -2937,7 +3376,8 @@ function getPointsFromGeometry(
   geometry,
   matrix = new THREE.Matrix4()
 ) {
-  const points = [];
+  const points =
+    [];
 
   if (
     !geometry ||
@@ -2986,7 +3426,8 @@ function getPointsFromGeometry(
 function getPointsFromObject(
   object
 ) {
-  const points = [];
+  const points =
+    [];
 
   object.updateMatrixWorld(
     true
@@ -3053,7 +3494,8 @@ function transformModelPoints(
   const vector =
     new THREE.Vector3();
 
-  const transformed = [];
+  const transformed =
+    [];
 
   for (
     const point of points
@@ -3088,8 +3530,11 @@ function fillRasterHoles(
       values.length
     );
 
-  let head = 0;
-  let tail = 0;
+  let head =
+    0;
+
+  let tail =
+    0;
 
   for (
     let i = 0;
@@ -3127,7 +3572,8 @@ function fillRasterHoles(
 
     const x =
       index -
-      z * resolution;
+      z *
+      resolution;
 
     for (
       const [dx, dz] of directions
@@ -3253,6 +3699,10 @@ function createTerrainFromPoints(
   for (
     const point of transformedPoints
   ) {
+    /*
+      X and Z are normalized independently.
+      This keeps the imported aspect ratio.
+    */
     const normalizedX =
       (
         point.x -
@@ -3461,6 +3911,11 @@ function load3DTerrain(
     "LOADING MODEL..."
   );
 
+  /*
+    Imported models in this workflow are
+    assumed to be Z-up and are converted
+    to Three.js Y-up.
+  */
   modelRotation.x =
     DEFAULT_IMPORTED_ROTATION_X;
 
@@ -3539,7 +3994,8 @@ function load3DTerrain(
 
   reader.onload =
     (event) => {
-      let geometry = null;
+      let geometry =
+        null;
 
       try {
         const buffer =
@@ -3884,6 +4340,19 @@ bindNumericSlider(
 );
 
 bindNumericSlider(
+  particleCohesionInput,
+  particleCohesionNumber,
+  (value) => {
+    params.particleCohesion =
+      value;
+
+    setStatus(
+      "PARTICLE COHESION UPDATED"
+    );
+  }
+);
+
+bindNumericSlider(
   startVelocityInput,
   startVelocityNumber,
   (value) => {
@@ -4014,6 +4483,32 @@ bindNumericSlider(
 );
 
 bindNumericSlider(
+  soupLinkRangeInput,
+  soupLinkRangeNumber,
+  (value) => {
+    params.soupLinkRange =
+      value;
+
+    soupUpdateAccumulator =
+      0;
+
+    if (
+      params.particleVisualization ===
+      "soup" &&
+      simulationStarted
+    ) {
+      updateSoupRenderer(
+        true
+      );
+    }
+
+    setStatus(
+      `SOUP LINK RANGE ${value}`
+    );
+  }
+);
+
+bindNumericSlider(
   particleSizeInput,
   particleSizeNumber,
   (value) => {
@@ -4022,14 +4517,8 @@ bindNumericSlider(
 
     updatePointMaterial();
 
-    if (
-      !simulationStarted
-    ) {
-      createParticles();
-    }
-
     setStatus(
-      `PARTICLE SCALE ${value}`
+      `PARTICLE DISPLAY SCALE ${value}`
     );
   }
 );
