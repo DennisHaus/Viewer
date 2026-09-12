@@ -45,337 +45,471 @@
         </p>
       </header>
 
+
       <section class="controls">
 
         <!-- MATERIAL -->
 
-        <div class="section-label">
-          MATERIAL
-        </div>
+        <details open>
+          <summary>MATERIAL</summary>
 
-        <div
-          class="control"
-          data-tip="Controls how quickly sediment particles lose velocity during movement."
-        >
-          <div class="label-row">
-            <label for="materialFriction">
-              MATERIAL FRICTION
-            </label>
+          <div class="details-body">
 
-            <input
-              id="materialFrictionNumber"
-              class="numeric-input"
-              type="number"
-              min="0"
-              max="1"
-              step="0.01"
-              value="0.35"
+            <div
+              class="control"
+              data-tip="Controls how quickly sediment parcels lose velocity during movement."
             >
-          </div>
+              <div class="label-row">
+                <label for="materialFriction">
+                  MATERIAL FRICTION
+                </label>
 
-          <input
-            id="materialFriction"
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value="0.35"
-          >
-        </div>
+                <input
+                  id="materialFrictionNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value="0.35"
+                >
+              </div>
 
-        <div
-          class="control"
-          data-tip="Provides particles with an initial movement impulse so they can leave small depressions."
-        >
-          <div class="label-row">
-            <label for="startVelocity">
-              START VELOCITY
-            </label>
+              <input
+                id="materialFriction"
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value="0.35"
+              >
+            </div>
 
-            <input
-              id="startVelocityNumber"
-              class="numeric-input"
-              type="number"
-              min="0"
-              max="5"
-              step="0.05"
-              value="1.0"
+
+            <div
+              class="control"
+              data-tip="Initial movement impulse given to newly released sediment."
             >
-          </div>
+              <div class="label-row">
+                <label for="startVelocity">
+                  START VELOCITY
+                </label>
 
-          <input
-            id="startVelocity"
-            type="range"
-            min="0"
-            max="5"
-            step="0.05"
-            value="1.0"
-          >
-        </div>
+                <input
+                  id="startVelocityNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="0.05"
+                  value="1"
+                >
+              </div>
+
+              <input
+                id="startVelocity"
+                type="range"
+                min="0"
+                max="5"
+                step="0.05"
+                value="1"
+              >
+            </div>
+
+          </div>
+        </details>
+
 
         <!-- TERRAIN -->
 
-        <div class="section-label terrain-label">
-          TERRAIN
-        </div>
+        <details open>
+          <summary>TERRAIN</summary>
 
-        <div
-          class="control"
-          data-tip="Defines the resolution of the terrain grid. Higher values create more detail but require more computation."
-        >
-          <div class="label-row">
-            <label for="terrainResolution">
-              TERRAIN RESOLUTION
-            </label>
+          <div class="details-body">
 
-            <input
-              id="terrainResolutionNumber"
-              class="numeric-input"
-              type="number"
-              min="64"
-              max="768"
-              step="1"
-              value="256"
+            <div
+              class="control"
+              data-tip="Higher values create more terrain detail but require more computation."
             >
-          </div>
+              <div class="label-row">
+                <label for="terrainResolution">
+                  TERRAIN RESOLUTION
+                </label>
 
-          <input
-            id="terrainResolution"
-            type="range"
-            min="64"
-            max="768"
-            step="1"
-            value="256"
-          >
-        </div>
+                <input
+                  id="terrainResolutionNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="64"
+                  max="768"
+                  step="1"
+                  value="256"
+                >
+              </div>
+
+              <input
+                id="terrainResolution"
+                type="range"
+                min="64"
+                max="768"
+                step="1"
+                value="256"
+              >
+            </div>
+
+          </div>
+        </details>
+
 
         <!-- MODEL -->
 
-        <div class="section-label terrain-label">
-          MODEL
-        </div>
+        <details>
+          <summary>MODEL</summary>
 
-        <div
-          class="control"
-          data-tip="Scales the imported model within the viewer. The scale starts at 0.1 and can reach 1000."
-        >
-          <div class="label-row">
-            <label for="modelScale">
-              MODEL SCALE
-            </label>
+          <div class="details-body">
 
-            <input
-              id="modelScaleNumber"
-              class="numeric-input"
-              type="number"
-              min="0.1"
-              max="1000"
-              step="0.1"
-              value="1.0"
+            <div
+              class="control"
+              data-tip="Uniform scale applied to the imported terrain."
             >
-          </div>
+              <div class="label-row">
+                <label for="modelScale">
+                  MODEL SCALE
+                </label>
 
-          <input
-            id="modelScale"
-            type="range"
-            min="0.1"
-            max="1000"
-            step="0.1"
-            value="1.0"
-          >
-        </div>
+                <input
+                  id="modelScaleNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="0.1"
+                  max="1000"
+                  step="0.1"
+                  value="1"
+                >
+              </div>
 
-        <div
-          class="control"
-          data-tip="Controls the vertical scale of the terrain. The default value 1.0 preserves the original vertical proportions."
-        >
-          <div class="label-row">
-            <label for="verticalExaggeration">
-              VERTICAL SCALE
-            </label>
+              <input
+                id="modelScale"
+                type="range"
+                min="0.1"
+                max="1000"
+                step="0.1"
+                value="1"
+              >
+            </div>
 
-            <input
-              id="verticalExaggerationNumber"
-              class="numeric-input"
-              type="number"
-              min="0.1"
-              max="20"
-              step="0.1"
-              value="1.0"
+
+            <div
+              class="control"
+              data-tip="Multiplies terrain height without changing its horizontal dimensions."
             >
-          </div>
+              <div class="label-row">
+                <label for="verticalExaggeration">
+                  VERTICAL SCALE
+                </label>
 
-          <input
-            id="verticalExaggeration"
-            type="range"
-            min="0.1"
-            max="20"
-            step="0.1"
-            value="1.0"
-          >
-        </div>
+                <input
+                  id="verticalExaggerationNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="0.1"
+                  max="20"
+                  step="0.1"
+                  value="1"
+                >
+              </div>
 
-        <!-- SOURCE -->
+              <input
+                id="verticalExaggeration"
+                type="range"
+                min="0.1"
+                max="20"
+                step="0.1"
+                value="1"
+              >
+            </div>
 
-        <div class="section-label terrain-label">
-          SOURCE
-        </div>
 
-        <div
-          class="control"
-          data-tip="Sets the amount of sediment particles released at the source location."
-        >
-          <div class="label-row">
-            <label for="sourceVolume">
-              SOURCE VOLUME m³
-            </label>
-
-            <input
-              id="sourceVolumeNumber"
-              class="numeric-input"
-              type="number"
-              min="1"
-              max="1000"
-              step="1"
-              value="8"
+            <div
+              class="control"
+              data-tip="Scales the terrain depth axis. The default value is 1.0."
             >
+              <div class="label-row">
+                <label for="depthScale">
+                  DEPTH SCALE Z
+                </label>
+
+                <input
+                  id="depthScaleNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="0.1"
+                  max="20"
+                  step="0.1"
+                  value="1"
+                >
+              </div>
+
+              <input
+                id="depthScale"
+                type="range"
+                min="0.1"
+                max="20"
+                step="0.1"
+                value="1"
+              >
+            </div>
+
           </div>
+        </details>
 
-          <input
-            id="sourceVolume"
-            type="range"
-            min="1"
-            max="1000"
-            step="1"
-            value="8"
-          >
-        </div>
 
-        <div
-          class="control"
-          data-tip="Controls the visual size of the sediment particles."
-        >
-          <div class="label-row">
-            <label for="particleSize">
-              PARTICLE SIZE
-            </label>
+        <!-- SOURCE VOLUME -->
 
-            <input
-              id="particleSizeNumber"
-              class="numeric-input"
-              type="number"
-              min="2"
-              max="24"
-              step="1"
-              value="7"
+        <details open>
+          <summary>SOURCE VOLUME</summary>
+
+          <div class="details-body">
+
+            <div
+              class="control"
+              data-tip="Total physical sediment volume represented by the simulation."
             >
-          </div>
+              <div class="label-row">
+                <label for="sourceVolume">
+                  SOURCE VOLUME m³
+                </label>
 
-          <input
-            id="particleSize"
-            type="range"
-            min="2"
-            max="24"
-            step="1"
-            value="7"
-          >
-        </div>
+                <input
+                  id="sourceVolumeNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="1"
+                  max="1000000"
+                  step="1"
+                  value="8"
+                >
+              </div>
+
+              <input
+                id="sourceVolume"
+                type="range"
+                min="1"
+                max="1000000"
+                step="1"
+                value="8"
+              >
+            </div>
+
+
+            <div
+              class="control"
+              data-tip="Width and depth of the release area. The release height is calculated from the selected volume."
+            >
+              <div class="label-row">
+                <label for="sourceFootprint">
+                  RELEASE AREA X/Z
+                </label>
+
+                <input
+                  id="sourceFootprintNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="0.25"
+                  max="1000"
+                  step="0.25"
+                  value="2"
+                >
+              </div>
+
+              <input
+                id="sourceFootprint"
+                type="range"
+                min="0.25"
+                max="1000"
+                step="0.25"
+                value="2"
+              >
+            </div>
+
+
+            <div
+              class="control"
+              data-tip="Number of simulated debris parcels per cubic metre. A safety cap is applied for very large simulations."
+            >
+              <div class="label-row">
+                <label for="debrisDensity">
+                  DEBRIS / m³
+                </label>
+
+                <input
+                  id="debrisDensityNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="0.01"
+                  max="10"
+                  step="0.01"
+                  value="1"
+                >
+              </div>
+
+              <input
+                id="debrisDensity"
+                type="range"
+                min="0.01"
+                max="10"
+                step="0.01"
+                value="1"
+              >
+            </div>
+
+
+            <div class="control">
+              <div class="label-row">
+                <label for="particleVisualization">
+                  VISUALIZATION
+                </label>
+
+                <select id="particleVisualization">
+                  <option value="points">
+                    POINT SPRITES
+                  </option>
+
+                  <option value="spheres">
+                    MESH SOUP
+                  </option>
+                </select>
+              </div>
+            </div>
+
+
+            <div
+              class="control"
+              data-tip="Visual scale for point sprites. Mesh-soup parcels use their calculated physical volume."
+            >
+              <div class="label-row">
+                <label for="particleSize">
+                  POINT DISPLAY SCALE
+                </label>
+
+                <input
+                  id="particleSizeNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="0.25"
+                  max="3"
+                  step="0.05"
+                  value="1"
+                >
+              </div>
+
+              <input
+                id="particleSize"
+                type="range"
+                min="0.25"
+                max="3"
+                step="0.05"
+                value="1"
+              >
+            </div>
+
+          </div>
+        </details>
+
 
         <!-- MODEL ORIENTATION -->
 
-        <div class="section-label terrain-label">
-          MODEL ORIENTATION
-        </div>
+        <details>
+          <summary>MODEL ORIENTATION</summary>
 
-        <div
-          class="control"
-          data-tip="Rotates the imported model around the X axis in 45-degree steps."
-        >
-          <div class="label-row">
-            <label for="rotationX">
-              ROTATE X
-            </label>
+          <div class="details-body">
 
-            <input
-              id="rotationXNumber"
-              class="numeric-input"
-              type="number"
-              min="-180"
-              max="180"
-              step="45"
-              value="0"
-            >
+            <div class="control">
+              <div class="label-row">
+                <label for="rotationX">
+                  ROTATE X
+                </label>
+
+                <input
+                  id="rotationXNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="-180"
+                  max="180"
+                  step="45"
+                  value="0"
+                >
+              </div>
+
+              <input
+                id="rotationX"
+                type="range"
+                min="-180"
+                max="180"
+                step="45"
+                value="0"
+              >
+            </div>
+
+
+            <div class="control">
+              <div class="label-row">
+                <label for="rotationY">
+                  ROTATE Y
+                </label>
+
+                <input
+                  id="rotationYNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="-180"
+                  max="180"
+                  step="45"
+                  value="0"
+                >
+              </div>
+
+              <input
+                id="rotationY"
+                type="range"
+                min="-180"
+                max="180"
+                step="45"
+                value="0"
+              >
+            </div>
+
+
+            <div class="control">
+              <div class="label-row">
+                <label for="rotationZ">
+                  ROTATE Z
+                </label>
+
+                <input
+                  id="rotationZNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="-180"
+                  max="180"
+                  step="45"
+                  value="0"
+                >
+              </div>
+
+              <input
+                id="rotationZ"
+                type="range"
+                min="-180"
+                max="180"
+                step="45"
+                value="0"
+              >
+            </div>
+
           </div>
+        </details>
 
-          <input
-            id="rotationX"
-            type="range"
-            min="-180"
-            max="180"
-            step="45"
-            value="0"
-          >
-        </div>
-
-        <div
-          class="control"
-          data-tip="Rotates the imported model around the Y axis in 45-degree steps."
-        >
-          <div class="label-row">
-            <label for="rotationY">
-              ROTATE Y
-            </label>
-
-            <input
-              id="rotationYNumber"
-              class="numeric-input"
-              type="number"
-              min="-180"
-              max="180"
-              step="45"
-              value="0"
-            >
-          </div>
-
-          <input
-            id="rotationY"
-            type="range"
-            min="-180"
-            max="180"
-            step="45"
-            value="0"
-          >
-        </div>
-
-        <div
-          class="control"
-          data-tip="Rotates the imported model around the Z axis in 45-degree steps."
-        >
-          <div class="label-row">
-            <label for="rotationZ">
-              ROTATE Z
-            </label>
-
-            <input
-              id="rotationZNumber"
-              class="numeric-input"
-              type="number"
-              min="-180"
-              max="180"
-              step="45"
-              value="0"
-            >
-          </div>
-
-          <input
-            id="rotationZ"
-            type="range"
-            min="-180"
-            max="180"
-            step="45"
-            value="0"
-          >
-        </div>
 
         <!-- BUTTONS -->
 
@@ -422,6 +556,7 @@
 
       </section>
 
+
       <!-- MODEL IMPORT -->
 
       <div id="dropZone">
@@ -444,9 +579,11 @@
         CHOOSE 3D MODEL
       </button>
 
+
       <div id="sourceHint">
         SHIFT + LEFT CLICK TO PLACE SOURCE
       </div>
+
 
       <footer>
         <span id="status">
@@ -454,7 +591,7 @@
         </span>
 
         <span id="particleCountStatus">
-          8 PARTICLES
+          8 PARCELS
         </span>
       </footer>
 

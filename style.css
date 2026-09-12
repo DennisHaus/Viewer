@@ -1,9 +1,15 @@
 :root {
-  --background: #0c1b1d;
-  --panel: rgba(10, 28, 30, 0.95);
+  color-scheme: dark;
+
+  --background: #000000;
+  --panel: #000000;
+  --surface: #050505;
+  --surface-soft: #0a0a0a;
+
   --text: #dceceb;
   --muted: #86a7a7;
-  --line: #285052;
+  --line: #2a3a3a;
+
   --accent: #54b8b3;
   --accent-light: #9bd7d0;
 }
@@ -18,8 +24,10 @@ body {
   height: 100%;
   margin: 0;
   overflow: hidden;
+
   background: var(--background);
   color: var(--text);
+
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -27,29 +35,46 @@ body {
   font-size: 12px;
 }
 
+button,
+input,
+select {
+  font: inherit;
+}
+
 #app {
   position: relative;
+
   width: 100vw;
   height: 100vh;
+
+  background: #000000;
 }
 
 #viewer {
   position: absolute;
   inset: 0;
   z-index: 1;
+
   pointer-events: auto;
 }
 
 #viewer canvas {
   display: block;
+
   width: 100%;
   height: 100%;
+
   cursor: grab;
 }
 
 #viewer canvas:active {
   cursor: grabbing;
 }
+
+
+/* =====================================================
+   INTERFACE
+===================================================== */
 
 #interface {
   position: absolute;
@@ -59,13 +84,14 @@ body {
 
   width: 325px;
   max-height: calc(100vh - 48px);
+
   overflow-y: auto;
 
   padding: 18px;
 
   border: 1px solid var(--line);
-  background: var(--panel);
-  backdrop-filter: blur(12px);
+
+  background: #000000;
 
   pointer-events: auto;
 }
@@ -82,10 +108,16 @@ body {
   background: var(--line);
 }
 
+
+/* =====================================================
+   HEADER
+===================================================== */
+
 .eyebrow {
   margin-bottom: 15px;
 
   color: var(--accent);
+
   font-size: 10px;
   letter-spacing: 0.14em;
 }
@@ -94,6 +126,7 @@ h1 {
   margin: 0;
 
   color: var(--text);
+
   font-size: 32px;
   line-height: 0.88;
   font-weight: 500;
@@ -102,37 +135,87 @@ h1 {
 
 .description {
   max-width: 250px;
+
   margin: 18px 0 28px;
 
   color: var(--muted);
+
   line-height: 1.45;
 }
 
+
+/* =====================================================
+   CONTROLS
+===================================================== */
+
 .controls {
   padding-top: 18px;
+
   border-top: 1px solid var(--line);
 }
 
-.section-label {
-  margin: 3px 0 15px;
+details {
+  margin: 0;
+
+  border-top: 1px solid var(--line);
+}
+
+details:last-of-type {
+  border-bottom: 1px solid var(--line);
+}
+
+summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  min-height: 36px;
 
   color: var(--accent);
+
   font-size: 9px;
   letter-spacing: 0.15em;
+
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
 }
 
-.terrain-label {
-  margin-top: 25px;
+summary::-webkit-details-marker {
+  display: none;
 }
+
+summary::after {
+  color: var(--muted);
+
+  content: "+";
+
+  font-size: 15px;
+  line-height: 1;
+}
+
+details[open] summary::after {
+  content: "−";
+}
+
+.details-body {
+  padding: 4px 0 8px;
+}
+
+
+/* =====================================================
+   CONTROLS AND TOOLTIPS
+===================================================== */
 
 .control {
   position: relative;
+
   margin-bottom: 17px;
 }
 
-/* =====================================================
-   SLIDER TOOLTIPS
-===================================================== */
+details .control:last-child {
+  margin-bottom: 8px;
+}
 
 .control[data-tip]::after {
   position: absolute;
@@ -141,10 +224,12 @@ h1 {
   z-index: 50;
 
   width: 250px;
+
   padding: 8px 9px;
 
   border: 1px solid var(--line);
-  background: #10282a;
+
+  background: #000000;
   color: var(--text);
 
   content: attr(data-tip);
@@ -168,16 +253,12 @@ h1 {
   transform: translateY(0);
 }
 
-/* =====================================================
-   LABELS AND NUMBER INPUTS
-===================================================== */
-
 .label-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
 
+  gap: 10px;
   margin-bottom: 8px;
 }
 
@@ -187,7 +268,7 @@ label {
 }
 
 .numeric-input {
-  width: 78px;
+  width: 82px;
   min-width: 0;
 
   padding: 3px 5px;
@@ -196,7 +277,7 @@ label {
   border-radius: 0;
   outline: none;
 
-  background: transparent;
+  background: #000000;
   color: var(--accent-light);
 
   font-family: inherit;
@@ -213,6 +294,33 @@ label {
 .numeric-input::-webkit-outer-spin-button {
   opacity: 0.6;
 }
+
+
+/* =====================================================
+   SELECT
+===================================================== */
+
+select {
+  width: 145px;
+  min-width: 0;
+
+  padding: 4px 6px;
+
+  border: 1px solid var(--line);
+  border-radius: 0;
+  outline: none;
+
+  background: #000000;
+  color: var(--accent-light);
+
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+select:focus {
+  border-color: var(--accent);
+}
+
 
 /* =====================================================
    RANGE SLIDERS
@@ -277,6 +385,7 @@ input[type="range"]::-moz-range-track {
   background: var(--line);
 }
 
+
 /* =====================================================
    BUTTONS
 ===================================================== */
@@ -296,15 +405,15 @@ button {
   flex: 1;
 
   min-height: 31px;
+
   padding: 7px 8px;
 
   border: 1px solid var(--line);
   border-radius: 0;
 
-  background: transparent;
+  background: #000000;
   color: var(--text);
 
-  font-family: inherit;
   font-size: 9px;
   letter-spacing: 0.08em;
 
@@ -321,8 +430,9 @@ button {
 button:hover,
 .file-button:hover {
   border-color: var(--accent);
+
   background: var(--accent);
-  color: #092022;
+  color: #000000;
 }
 
 button:active {
@@ -335,6 +445,7 @@ button:active {
   width: 100%;
   margin-top: 7px;
 }
+
 
 /* =====================================================
    DROP ZONE
@@ -349,7 +460,9 @@ button:active {
 
   border: 1px dashed var(--line);
 
+  background: #000000;
   color: var(--muted);
+
   text-align: center;
 
   font-size: 9px;
@@ -382,18 +495,20 @@ button:active {
 
 #dropZone.drag-over {
   border-color: var(--accent);
+
   background: var(--accent);
-  color: #092022;
+  color: #000000;
 }
 
 #dropZone.drag-over span {
-  color: #092022;
+  color: #000000;
 }
 
 #dropZone.loaded {
   border-color: var(--accent);
   color: var(--accent-light);
 }
+
 
 /* =====================================================
    FOOTER
@@ -413,6 +528,7 @@ button:active {
 footer {
   display: flex;
   justify-content: space-between;
+
   gap: 12px;
 
   margin-top: 25px;
@@ -420,6 +536,7 @@ footer {
 
   border-top: 1px solid var(--line);
 
+  background: #000000;
   color: var(--muted);
 
   font-size: 9px;
@@ -429,6 +546,7 @@ footer {
 #status {
   color: var(--accent-light);
 }
+
 
 /* =====================================================
    MOBILE
@@ -456,7 +574,11 @@ footer {
   }
 
   .numeric-input {
-    width: 70px;
+    width: 72px;
+  }
+
+  select {
+    width: 130px;
   }
 
   .control[data-tip]::after {
