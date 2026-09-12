@@ -57,7 +57,7 @@
 
             <div
               class="control"
-              data-tip="Controls how quickly sediment parcels lose velocity during movement."
+              data-tip="Controls how quickly sediment particles lose velocity during movement."
             >
               <div class="label-row">
                 <label for="materialFriction">
@@ -88,7 +88,7 @@
 
             <div
               class="control"
-              data-tip="Initial movement impulse given to newly released sediment."
+              data-tip="Initial movement impulse given to newly released material."
             >
               <div class="label-row">
                 <label for="startVelocity">
@@ -201,7 +201,7 @@
 
             <div
               class="control"
-              data-tip="Multiplies terrain height without changing its horizontal dimensions."
+              data-tip="Scales terrain height without changing its horizontal dimensions."
             >
               <div class="label-row">
                 <label for="verticalExaggeration">
@@ -236,7 +236,7 @@
             >
               <div class="label-row">
                 <label for="depthScale">
-                  DEPTH SCALE Z
+                  Z AXIS SCALE
                 </label>
 
                 <input
@@ -264,16 +264,16 @@
         </details>
 
 
-        <!-- SOURCE VOLUME -->
+        <!-- SOURCE MATERIAL -->
 
         <details open>
-          <summary>SOURCE VOLUME</summary>
+          <summary>SOURCE MATERIAL</summary>
 
           <div class="details-body">
 
             <div
               class="control"
-              data-tip="Total physical sediment volume represented by the simulation."
+              data-tip="Total physical source material volume."
             >
               <div class="label-row">
                 <label for="sourceVolume">
@@ -284,66 +284,66 @@
                   id="sourceVolumeNumber"
                   class="numeric-input"
                   type="number"
-                  min="1"
+                  min="1000"
                   max="1000000"
-                  step="1"
-                  value="8"
+                  step="1000"
+                  value="10000"
                 >
               </div>
 
               <input
                 id="sourceVolume"
                 type="range"
-                min="1"
+                min="1000"
                 max="1000000"
-                step="1"
-                value="8"
+                step="1000"
+                value="10000"
               >
             </div>
 
 
             <div
               class="control"
-              data-tip="Width and depth of the release area. The release height is calculated from the selected volume."
+              data-tip="Horizontal area over which the material is initially released."
             >
               <div class="label-row">
-                <label for="sourceFootprint">
-                  RELEASE AREA X/Z
+                <label for="sourceArea">
+                  RELEASE AREA m²
                 </label>
 
                 <input
-                  id="sourceFootprintNumber"
+                  id="sourceAreaNumber"
                   class="numeric-input"
                   type="number"
-                  min="0.25"
+                  min="100"
                   max="1000"
-                  step="0.25"
-                  value="2"
+                  step="10"
+                  value="100"
                 >
               </div>
 
               <input
-                id="sourceFootprint"
+                id="sourceArea"
                 type="range"
-                min="0.25"
+                min="100"
                 max="1000"
-                step="0.25"
-                value="2"
+                step="10"
+                value="100"
               >
             </div>
 
 
             <div
               class="control"
-              data-tip="Number of simulated debris parcels per cubic metre. A safety cap is applied for very large simulations."
+              data-tip="Number of particles generated per cubic metre of source material."
             >
               <div class="label-row">
-                <label for="debrisDensity">
-                  DEBRIS / m³
+                <label for="particleDensity">
+                  PARTICLE / m³
                 </label>
 
                 <input
-                  id="debrisDensityNumber"
+                  id="particleDensityNumber"
                   class="numeric-input"
                   type="number"
                   min="0.01"
@@ -354,7 +354,7 @@
               </div>
 
               <input
-                id="debrisDensity"
+                id="particleDensity"
                 type="range"
                 min="0.01"
                 max="10"
@@ -372,11 +372,11 @@
 
                 <select id="particleVisualization">
                   <option value="points">
-                    POINT SPRITES
+                    POINT PARTICLES
                   </option>
 
-                  <option value="spheres">
-                    MESH SOUP
+                  <option value="soup">
+                    CONNECTED SOUP
                   </option>
                 </select>
               </div>
@@ -385,11 +385,11 @@
 
             <div
               class="control"
-              data-tip="Visual scale for point sprites. Mesh-soup parcels use their calculated physical volume."
+              data-tip="Display multiplier for point particles. Connected soup uses calculated physical parcel volume."
             >
               <div class="label-row">
                 <label for="particleSize">
-                  POINT DISPLAY SCALE
+                  PARTICLE DISPLAY SCALE
                 </label>
 
                 <input
@@ -417,7 +417,7 @@
         </details>
 
 
-        <!-- MODEL ORIENTATION -->
+        <!-- ORIENTATION -->
 
         <details>
           <summary>MODEL ORIENTATION</summary>
@@ -591,7 +591,7 @@
         </span>
 
         <span id="particleCountStatus">
-          8 PARCELS
+          0 PARTICLES
         </span>
       </footer>
 

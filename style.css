@@ -4,7 +4,6 @@
   --background: #000000;
   --panel: #000000;
   --surface: #050505;
-  --surface-soft: #0a0a0a;
 
   --text: #dceceb;
   --muted: #86a7a7;
@@ -25,7 +24,7 @@ body {
   margin: 0;
   overflow: hidden;
 
-  background: var(--background);
+  background: #000000;
   color: var(--text);
 
   font-family: Arial, Helvetica, sans-serif;
@@ -54,8 +53,6 @@ select {
   position: absolute;
   inset: 0;
   z-index: 1;
-
-  pointer-events: auto;
 }
 
 #viewer canvas {
@@ -145,7 +142,7 @@ h1 {
 
 
 /* =====================================================
-   CONTROLS
+   COLLAPSIBLE SECTIONS
 ===================================================== */
 
 .controls {
@@ -204,7 +201,7 @@ details[open] summary::after {
 
 
 /* =====================================================
-   CONTROLS AND TOOLTIPS
+   CONTROLS
 ===================================================== */
 
 .control {
@@ -215,6 +212,20 @@ details[open] summary::after {
 
 details .control:last-child {
   margin-bottom: 8px;
+}
+
+.label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+label {
+  font-size: 9px;
+  letter-spacing: 0.1em;
 }
 
 .control[data-tip]::after {
@@ -253,19 +264,10 @@ details .control:last-child {
   transform: translateY(0);
 }
 
-.label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-label {
-  font-size: 9px;
-  letter-spacing: 0.1em;
-}
+/* =====================================================
+   NUMBER INPUTS
+===================================================== */
 
 .numeric-input {
   width: 82px;
@@ -418,7 +420,6 @@ button {
   letter-spacing: 0.08em;
 
   cursor: pointer;
-  pointer-events: auto;
 
   transition:
     background-color 0.15s ease,
@@ -468,9 +469,6 @@ button:active {
   font-size: 9px;
   letter-spacing: 0.1em;
   line-height: 1.5;
-
-  cursor: default;
-  pointer-events: auto;
 
   transition:
     background-color 0.2s ease,
