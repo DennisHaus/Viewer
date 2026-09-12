@@ -29,7 +29,8 @@ const $ = (id) => {
   return document.getElementById(id);
 };
 
-const viewer = $("viewer");
+const viewer =
+  $("viewer");
 
 const materialFrictionInput =
   $("materialFriction");
@@ -158,7 +159,9 @@ const scene =
   new THREE.Scene();
 
 scene.background =
-  new THREE.Color(0x000000);
+  new THREE.Color(
+    0x000000
+  );
 
 const camera =
   new THREE.PerspectiveCamera(
@@ -202,7 +205,7 @@ viewer.appendChild(
 
 
 /* =====================================================
-   CAMERA CONTROLS
+   CONTROLS
 ===================================================== */
 
 const controls =
@@ -232,7 +235,9 @@ controls.zoomSpeed = 0.9;
 controls.minDistance = 0.5;
 controls.maxDistance = 10000000;
 
-controls.minPolarAngle = 0.05;
+controls.minPolarAngle =
+  0.05;
+
 controls.maxPolarAngle =
   Math.PI * 0.49;
 
@@ -305,30 +310,33 @@ const params = {
 };
 
 
-/*
-  The procedural landscape is deliberately larger
-  so release areas between 100 and 1000 m² fit.
-*/
+/* =====================================================
+   CONSTANTS
+===================================================== */
+
 const TERRAIN_SIZE = 120;
 
+const MAX_SIMULATED_PARTICLES =
+  30000;
 
-/*
-  This prevents an accidental setting such as
-  1,000,000 m³ × 10 particles/m³ from freezing
-  the browser.
+const GRAVITY = 9.81;
 
-  The requested total is still calculated exactly.
-  The footer indicates when this cap is active.
-*/
-const MAX_SIMULATED_PARTICLES = 80000;
+const COLLISION_ITERATIONS = 3;
+
+const COLLISION_RESTITUTION = 0.0;
+
+const DEFAULT_IMPORTED_ROTATION_X =
+  -90;
+
+const SOUP_RESOLUTION = 48;
+
+const SOUP_MAX_POLYGONS =
+  240000;
 
 
-/*
-  Marching Cubes resolution for the connected soup.
-*/
-const SOUP_RESOLUTION = 32;
-const SOUP_MAX_POLYGONS = 180000;
-
+/* =====================================================
+   STATE
+===================================================== */
 
 let terrainSeed =
   Math.random() * 100000;
@@ -341,6 +349,7 @@ let rawModelPoints = null;
 let currentFileName = "";
 
 let sourceMarker = null;
+let sourceVolumePreview = null;
 
 let particles = [];
 
@@ -354,8 +363,16 @@ let soupMaterial = null;
 let particleCount = 0;
 let parcelVolume = 0;
 let parcelRadius = 0;
+let collisionRadius = 0;
+
+let sourceLayout = null;
 
 let simulationStarted = false;
+
+let soupFieldSize = 1;
+
+const soupFieldMin =
+  new THREE.Vector3();
 
 const modelRotation = {
   x: 0,
@@ -370,14 +387,6 @@ const sourceLocation =
     -TERRAIN_SIZE * 0.35
 );
 
-const soupFieldCenter =
-  new THREE.Vector3();
-
-let soupFieldSize = 1;
-
-const particleDummy =
-  new THREE.Object3D();
-
 
 /* =====================================================
    HELPERS
@@ -390,13 +399,42 @@ function clamp(
 ) {
   return Math.max(
     min,
-    Math.min(max, value)
+    Math.min(
+      max,
+      value
+    )
   );
 }
 
 function formatNumber(value) {
   return Number(value)
-    .toLocaleString("en-US");
+    .toLocaleString(
+      "en-US"
+    );
+}
+
+function escapeHTML(value) {
+  return String(value)
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 }
 
 function disposeObject(object) {
@@ -433,15 +471,6 @@ function disposeObject(object) {
   }
 }
 
-function escapeHTML(value) {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
 
 /* =====================================================
    TERRAIN DIMENSIONS
@@ -463,21 +492,13 @@ function getTerrainDepth() {
       ? customTerrain.depth
       : TERRAIN_SIZE;
 
+  /*
+    Z/depth scaling is applied exactly once
+    to the final terrain depth.
+  */
   return baseDepth *
     params.modelScale *
     params.depthScale;
-}
-
-function getTerrainBaseWidth() {
-  return customTerrain
-    ? customTerrain.width
-    : TERRAIN_SIZE;
-}
-
-function getTerrainBaseDepth() {
-  return customTerrain
-    ? customTerrain.depth
-    : TERRAIN_SIZE;
 }
 
 
@@ -496,7 +517,10 @@ function smoothStep(value) {
     (3 - 2 * value);
 }
 
-function hash2D(x, z) {
+function hash2D(
+  x,
+  z
+) {
   const value =
     Math.sin(
       x * 127.1 +
@@ -508,7 +532,10 @@ function hash2D(x, z) {
   return fract(value);
 }
 
-function valueNoise(x, z) {
+function valueNoise(
+  x,
+  z
+) {
   const x0 =
     Math.floor(x);
 
@@ -522,22 +549,38 @@ function valueNoise(x, z) {
     z0 + 1;
 
   const tx =
-    smoothStep(x - x0);
+    smoothStep(
+      x - x0
+    );
 
   const tz =
-    smoothStep(z - z0);
+    smoothStep(
+      z - z0
+    );
 
   const a =
-    hash2D(x0, z0);
+    hash2D(
+      x0,
+      z0
+    );
 
   const b =
-    hash2D(x1, z0);
+    hash2D(
+      x1,
+      z0
+    );
 
   const c =
-    hash2D(x0, z1);
+    hash2D(
+      x0,
+      z1
+    );
 
   const d =
-    hash2D(x1, z1);
+    hash2D(
+      x1,
+      z1
+    );
 
   const top =
     THREE.MathUtils.lerp(
@@ -605,11 +648,6 @@ function proceduralTerrainHeight(
     z / TERRAIN_SIZE +
     0.5;
 
-
-  /*
-    Domain warping prevents obvious repetitive
-    sine-wave patterns.
-  */
   const warpX =
     (
       fractalNoise(
@@ -694,10 +732,6 @@ function proceduralTerrainHeight(
     basin +
     ridge;
 
-
-  /*
-    Lower amplitude gives gentler slopes.
-  */
   return combined * 0.48;
 }
 
@@ -710,46 +744,26 @@ function sampleCustomTerrain(
   worldX,
   worldZ
 ) {
-  const modelScale =
-    Math.max(
-      0.0001,
-      params.modelScale
-    );
+  const width =
+    getTerrainWidth();
 
-  const depthScale =
-    Math.max(
-      0.0001,
-      params.depthScale
-    );
-
+  const depth =
+    getTerrainDepth();
 
   /*
-    Undo the world scale before looking up
-    the original imported terrain raster.
+    Convert directly from world-space X/Z
+    to raster coordinates.
   */
-  const baseX =
-    worldX /
-    modelScale;
-
-  const baseZ =
-    worldZ /
-    modelScale /
-    depthScale;
-
   const normalizedX =
     clamp(
-      baseX /
-        getTerrainBaseWidth() +
-        0.5,
+      worldX / width + 0.5,
       0,
       1
     );
 
   const normalizedZ =
     clamp(
-      baseZ /
-        getTerrainBaseDepth() +
-        0.5,
+      worldZ / depth + 0.5,
       0,
       1
     );
@@ -835,11 +849,14 @@ function sampleCustomTerrain(
 
   return normalizedHeight *
     customTerrain.height *
-    modelScale *
+    params.modelScale *
     params.verticalExaggeration;
 }
 
-function terrainHeight(x, z) {
+function terrainHeight(
+  x,
+  z
+) {
   if (customTerrain) {
     return sampleCustomTerrain(
       x,
@@ -860,8 +877,7 @@ function terrainHeight(x, z) {
     );
 
   const baseX =
-    x /
-    modelScale;
+    x / modelScale;
 
   const baseZ =
     z /
@@ -935,7 +951,8 @@ function createTerrain() {
     );
   }
 
-  positions.needsUpdate = true;
+  positions.needsUpdate =
+    true;
 
   geometry.computeVertexNormals();
 
@@ -975,24 +992,19 @@ function createTerrain() {
     );
   }
 
-  updateSourceMarker();
+  updateSourceVisuals();
 }
 
 
 /* =====================================================
-   SOURCE AREA
+   SOURCE VOLUME
 ===================================================== */
 
 function getReleaseSideLength() {
-  return Math.sqrt(
-    params.sourceArea
-  );
-}
-
-function updateSourceMarker() {
-  if (!sourceMarker) {
-    return;
-  }
+  const requestedSide =
+    Math.sqrt(
+      params.sourceArea
+    );
 
   const terrainWidth =
     getTerrainWidth();
@@ -1000,69 +1012,32 @@ function updateSourceMarker() {
   const terrainDepth =
     getTerrainDepth();
 
+  return Math.min(
+    requestedSide,
+    terrainWidth * 0.9,
+    terrainDepth * 0.9
+  );
+}
+
+function getEffectiveReleaseArea() {
   const side =
     getReleaseSideLength();
 
-  const halfSide =
-    side * 0.5;
-
-  const fitHalfX =
-    Math.min(
-      halfSide,
-      terrainWidth * 0.5
-    );
-
-  const fitHalfZ =
-    Math.min(
-      halfSide,
-      terrainDepth * 0.5
-    );
-
-  sourceLocation.x =
-    clamp(
-      sourceLocation.x,
-      -terrainWidth * 0.5 +
-        fitHalfX,
-      terrainWidth * 0.5 -
-        fitHalfX
-    );
-
-  sourceLocation.z =
-    clamp(
-      sourceLocation.z,
-      -terrainDepth * 0.5 +
-        fitHalfZ,
-      terrainDepth * 0.5 -
-        fitHalfZ
-    );
-
-  sourceLocation.y =
-    terrainHeight(
-      sourceLocation.x,
-      sourceLocation.z
-    ) +
-    0.05;
-
-  sourceMarker.position.copy(
-    sourceLocation
-  );
-
-  /*
-    RingGeometry has an outer diameter of 2.
-    Scaling by side / 2 gives the requested
-    square-equivalent release diameter.
-  */
-  sourceMarker.scale.setScalar(
-    side * 0.5
-  );
-
-  sourceMarker.visible =
-    !simulationStarted;
+  return side * side;
 }
 
-function createSourceMarker() {
+function getSourceHeight() {
+  return params.sourceVolume /
+    getEffectiveReleaseArea();
+}
+
+function createSourceVisuals() {
   disposeObject(
     sourceMarker
+  );
+
+  disposeObject(
+    sourceVolumePreview
   );
 
   sourceMarker =
@@ -1084,13 +1059,119 @@ function createSourceMarker() {
   sourceMarker.rotation.x =
     -Math.PI / 2;
 
-  sourceMarker.renderOrder = 20;
+  sourceMarker.renderOrder =
+    20;
 
   scene.add(
     sourceMarker
   );
 
-  updateSourceMarker();
+  sourceVolumePreview =
+    new THREE.Mesh(
+      new THREE.BoxGeometry(
+        1,
+        1,
+        1
+      ),
+      new THREE.MeshBasicMaterial({
+        color: 0x54b8b3,
+        transparent: true,
+        opacity: 0.16,
+        wireframe: true,
+        depthWrite: false
+      })
+    );
+
+  sourceVolumePreview.renderOrder =
+    15;
+
+  scene.add(
+    sourceVolumePreview
+  );
+
+  updateSourceVisuals();
+}
+
+function updateSourceVisuals() {
+  if (!terrainMesh) {
+    return;
+  }
+
+  const terrainWidth =
+    getTerrainWidth();
+
+  const terrainDepth =
+    getTerrainDepth();
+
+  const side =
+    getReleaseSideLength();
+
+  const halfSide =
+    side * 0.5;
+
+  sourceLocation.x =
+    clamp(
+      sourceLocation.x,
+      -terrainWidth * 0.5 +
+        halfSide,
+      terrainWidth * 0.5 -
+        halfSide
+    );
+
+  sourceLocation.z =
+    clamp(
+      sourceLocation.z,
+      -terrainDepth * 0.5 +
+        halfSide,
+      terrainDepth * 0.5 -
+        halfSide
+    );
+
+  const groundY =
+    terrainHeight(
+      sourceLocation.x,
+      sourceLocation.z
+    );
+
+  sourceLocation.y =
+    groundY + 0.05;
+
+  if (sourceMarker) {
+    sourceMarker.position.copy(
+      sourceLocation
+    );
+
+    /*
+      RingGeometry has an outer diameter
+      of approximately 2 world units.
+    */
+    sourceMarker.scale.setScalar(
+      side * 0.5
+    );
+
+    sourceMarker.visible =
+      !simulationStarted;
+  }
+
+  if (sourceVolumePreview) {
+    const height =
+      getSourceHeight();
+
+    sourceVolumePreview.position.set(
+      sourceLocation.x,
+      groundY + height * 0.5,
+      sourceLocation.z
+    );
+
+    sourceVolumePreview.scale.set(
+      side,
+      height,
+      side
+    );
+
+    sourceVolumePreview.visible =
+      !simulationStarted;
+  }
 }
 
 
@@ -1137,38 +1218,70 @@ function updateParticleCountStatus() {
 
 
 /* =====================================================
-   PARTICLE CREATION
+   PARTICLE PHYSICS HELPERS
 ===================================================== */
-
-function getProjectionScale() {
-  const drawingBufferSize =
-    new THREE.Vector2();
-
-  renderer.getDrawingBufferSize(
-    drawingBufferSize
-  );
-
-  return drawingBufferSize.y /
-    (
-      2 *
-      Math.tan(
-        THREE.MathUtils.degToRad(
-          camera.fov * 0.5
-        )
-      )
-    );
-}
 
 function getParticleRadius() {
   /*
-    Each simulated particle represents a fixed
-    volume. The radius never changes while moving.
+    Each particle has a fixed physical volume.
   */
   return Math.cbrt(
     parcelVolume *
     3 /
     (4 * Math.PI)
   );
+}
+
+function terrainGradient(
+  x,
+  z
+) {
+  const distance =
+    Math.max(
+      0.08,
+      Math.min(
+        getTerrainWidth(),
+        getTerrainDepth()
+      ) /
+      Math.max(
+        64,
+        params.terrainResolution
+      )
+    );
+
+  const left =
+    terrainHeight(
+      x - distance,
+      z
+    );
+
+  const right =
+    terrainHeight(
+      x + distance,
+      z
+    );
+
+  const back =
+    terrainHeight(
+      x,
+      z - distance
+    );
+
+  const front =
+    terrainHeight(
+      x,
+      z + distance
+    );
+
+  return {
+    dx:
+      (right - left) /
+      (2 * distance),
+
+    dz:
+      (front - back) /
+      (2 * distance)
+  };
 }
 
 function getDownhillVelocity(
@@ -1215,28 +1328,135 @@ function getDownhillVelocity(
   };
 }
 
-function placeParticleAtSource(
-  particle
-) {
+
+/* =====================================================
+   INITIAL SOURCE STACK
+===================================================== */
+
+function createSourceLayout() {
   const side =
     getReleaseSideLength();
 
-  const halfSide =
-    side * 0.5;
+  const spacing =
+    Math.max(
+      collisionRadius * 2.05,
+      0.01
+    );
+
+  const columns =
+    Math.max(
+      1,
+      Math.floor(
+        side / spacing
+      )
+    );
+
+  const particlesPerLayer =
+    columns *
+    columns;
+
+  const layers =
+    Math.max(
+      1,
+      Math.ceil(
+        particleCount /
+        particlesPerLayer
+      )
+    );
+
+  const targetHeight =
+    params.sourceVolume /
+    (side * side);
+
+  const verticalSpacing =
+    Math.max(
+      spacing,
+      targetHeight / layers
+    );
+
+  return {
+    side,
+    spacing,
+    columns,
+    particlesPerLayer,
+    layers,
+    verticalSpacing
+  };
+}
+
+function placeParticleAtSource(
+  particle
+) {
+  if (!sourceLayout) {
+    return;
+  }
+
+  const {
+    columns,
+    particlesPerLayer,
+    spacing,
+    verticalSpacing
+  } = sourceLayout;
+
+  const index =
+    particle.sourceIndex;
+
+  const layer =
+    Math.floor(
+      index /
+      particlesPerLayer
+    );
+
+  const slot =
+    index %
+    particlesPerLayer;
+
+  const gridX =
+    slot %
+    columns;
+
+  const gridZ =
+    Math.floor(
+      slot / columns
+    );
+
+  const centerOffset =
+    (columns - 1) *
+    0.5;
 
   const x =
     sourceLocation.x +
     (
-      Math.random() * 2 - 1
+      gridX -
+      centerOffset
     ) *
-    halfSide;
+    spacing;
 
   const z =
     sourceLocation.z +
     (
-      Math.random() * 2 - 1
+      gridZ -
+      centerOffset
     ) *
-    halfSide;
+    spacing;
+
+  const groundY =
+    terrainHeight(
+      x,
+      z
+    );
+
+  particle.x =
+    x;
+
+  particle.y =
+    groundY +
+    parcelRadius +
+    layer *
+    verticalSpacing;
+
+  particle.z =
+    z;
 
   const velocity =
     getDownhillVelocity(
@@ -1244,35 +1464,28 @@ function placeParticleAtSource(
       z
     );
 
-  particle.x = x;
-  particle.z = z;
-
-  /*
-    Particles are placed on the terrain surface.
-    The selected volume is represented by the
-    fixed physical volume of each parcel.
-  */
-  particle.y =
-    terrainHeight(
-      x,
-      z
-    ) +
-    parcelRadius;
-
   particle.vx =
     velocity.vx;
 
-  particle.vy = 0;
+  particle.vy =
+    0;
 
   particle.vz =
     velocity.vz;
 
-  particle.age = 0;
-  particle.launchAge = 0;
-  particle.deposited = false;
+  particle.age =
+    0;
+
+  particle.launchAge =
+    0;
+
+  particle.deposited =
+    false;
 }
 
-function createRandomParticle() {
+function createRandomParticle(
+  sourceIndex
+) {
   const particle = {
     x: 0,
     y: 0,
@@ -1284,7 +1497,9 @@ function createRandomParticle() {
 
     age: 0,
     launchAge: 0,
-    deposited: false
+    deposited: false,
+
+    sourceIndex
   };
 
   placeParticleAtSource(
@@ -1297,6 +1512,15 @@ function createRandomParticle() {
 function resetParticle(
   particle
 ) {
+  particle.vx =
+    0;
+
+  particle.vy =
+    0;
+
+  particle.vz =
+    0;
+
   placeParticleAtSource(
     particle
   );
@@ -1304,8 +1528,27 @@ function resetParticle(
 
 
 /* =====================================================
-   POINT PARTICLES
+   POINT PARTICLE RENDERING
 ===================================================== */
+
+function getProjectionScale() {
+  const drawingBufferSize =
+    new THREE.Vector2();
+
+  renderer.getDrawingBufferSize(
+    drawingBufferSize
+  );
+
+  return drawingBufferSize.y /
+    (
+      2 *
+      Math.tan(
+        THREE.MathUtils.degToRad(
+          camera.fov * 0.5
+        )
+      )
+    );
+}
 
 function createPointParticles() {
   const positions =
@@ -1493,83 +1736,106 @@ function syncPointParticles() {
   particleGeometry
     .attributes
     .position
-    .needsUpdate = true;
+    .needsUpdate =
+    true;
+}
+
+function updatePointMaterial() {
+  if (
+    particleMaterial &&
+    particleMaterial.uniforms
+  ) {
+    particleMaterial
+      .uniforms
+      .pointSize
+      .value =
+      params.particleSize;
+
+    particleMaterial
+      .uniforms
+      .projectionScale
+      .value =
+      getProjectionScale();
+  }
 }
 
 
 /* =====================================================
-   CONNECTED SOUP
+   CONNECTED SOUP RENDERING
 ===================================================== */
 
 function getSoupBounds() {
-  const terrainBox =
-    new THREE.Box3()
-      .setFromObject(
-        terrainMesh
-      );
+  const box =
+    new THREE.Box3();
 
-  const terrainSize =
-    new THREE.Vector3();
-
-  const terrainCenter =
-    new THREE.Vector3();
-
-  terrainBox.getSize(
-    terrainSize
-  );
-
-  terrainBox.getCenter(
-    terrainCenter
-  );
+  for (
+    const particle of particles
+  ) {
+    box.expandByPoint(
+      new THREE.Vector3(
+        particle.x,
+        particle.y,
+        particle.z
+      )
+    );
+  }
 
   const margin =
     Math.max(
-      2,
-      getReleaseSideLength(),
-      parcelRadius * 4
+      parcelRadius * 4,
+      sourceLayout?.spacing || 1,
+      1
     );
+
+  box.expandByScalar(
+    margin
+  );
+
+  const size =
+    new THREE.Vector3();
+
+  const center =
+    new THREE.Vector3();
+
+  box.getSize(
+    size
+  );
+
+  box.getCenter(
+    center
+  );
 
   soupFieldSize =
     Math.max(
-      terrainSize.x,
-      terrainSize.y,
-      terrainSize.z
-    ) +
-    margin * 2;
+      size.x,
+      size.y,
+      size.z,
+      1
+    );
 
-  soupFieldCenter.copy(
-    terrainCenter
-  );
-
-  return {
-    minX:
-      soupFieldCenter.x -
+  soupFieldMin.set(
+    center.x -
       soupFieldSize * 0.5,
 
-    minY:
-      soupFieldCenter.y -
+    center.y -
       soupFieldSize * 0.5,
 
-    minZ:
-      soupFieldCenter.z -
+    center.z -
       soupFieldSize * 0.5
-  };
+  );
 }
 
 function buildSoupClusters() {
   const clusters =
     new Map();
 
-  /*
-    Larger cells intentionally aggregate
-    nearby particles into blobs before the
-    Marching Cubes field is generated.
-  */
   const cellSize =
     Math.max(
-      parcelRadius * 3,
-      getReleaseSideLength() / 10,
-      0.5
+      sourceLayout?.spacing || 0,
+      parcelRadius * 1.5,
+      soupFieldSize /
+        SOUP_RESOLUTION *
+        1.25
     );
 
   for (
@@ -1602,7 +1868,9 @@ function buildSoupClusters() {
       `${cellX}:${cellY}:${cellZ}`;
 
     let cluster =
-      clusters.get(key);
+      clusters.get(
+        key
+      );
 
     if (!cluster) {
       cluster = {
@@ -1638,10 +1906,6 @@ function buildSoupClusters() {
     const count =
       cluster.count;
 
-    const volume =
-      count *
-      parcelVolume;
-
     result.push({
       x:
         cluster.x /
@@ -1655,7 +1919,9 @@ function buildSoupClusters() {
         cluster.z /
         count,
 
-      volume
+      volume:
+        count *
+        parcelVolume
     });
   }
 
@@ -1695,6 +1961,9 @@ function createSoupRenderer() {
   soupRenderer.frustumCulled =
     false;
 
+  soupRenderer.visible =
+    false;
+
   scene.add(
     soupRenderer
   );
@@ -1703,20 +1972,26 @@ function createSoupRenderer() {
 function updateSoupRenderer() {
   if (
     !soupRenderer ||
-    !terrainMesh ||
-    !simulationStarted
+    !simulationStarted ||
+    !particles.length
   ) {
     return;
   }
 
-  const bounds =
-    getSoupBounds();
+  getSoupBounds();
 
+  /*
+    MarchingCubes uses a normalized field.
+    The field object is placed at its minimum
+    world-space corner and scaled to the field size.
+  */
   soupRenderer.position.copy(
-    soupFieldCenter
+    soupFieldMin
   );
 
-  soupRenderer.scale.setScalar(
+  soupRenderer.scale.set(
+    soupFieldSize,
+    soupFieldSize,
     soupFieldSize
   );
 
@@ -1724,9 +1999,6 @@ function updateSoupRenderer() {
 
   const soupData =
     buildSoupClusters();
-
-  const fieldSize =
-    soupFieldSize;
 
   const subtract =
     12;
@@ -1738,9 +2010,9 @@ function updateSoupRenderer() {
       clamp(
         (
           cluster.x -
-          bounds.minX
+          soupFieldMin.x
         ) /
-        fieldSize,
+        soupFieldSize,
         0.001,
         0.999
       );
@@ -1749,9 +2021,9 @@ function updateSoupRenderer() {
       clamp(
         (
           cluster.y -
-          bounds.minY
+          soupFieldMin.y
         ) /
-        fieldSize,
+        soupFieldSize,
         0.001,
         0.999
       );
@@ -1760,9 +2032,9 @@ function updateSoupRenderer() {
       clamp(
         (
           cluster.z -
-          bounds.minZ
+          soupFieldMin.z
         ) /
-        fieldSize,
+        soupFieldSize,
         0.001,
         0.999
       );
@@ -1774,19 +2046,15 @@ function updateSoupRenderer() {
         (4 * Math.PI)
       );
 
-    /*
-      The cell-size term makes neighboring
-      clusters overlap and form connected soups.
-    */
     const blobRadius =
       Math.max(
-        volumeRadius * 1.15,
-        soupData.cellSize * 0.55
+        volumeRadius * 1.25,
+        soupData.cellSize * 0.7
       );
 
     const normalizedRadius =
       blobRadius /
-      fieldSize;
+      soupFieldSize;
 
     const strength =
       (
@@ -1806,27 +2074,27 @@ function updateSoupRenderer() {
   }
 
   soupRenderer.update();
+
+  soupRenderer.visible =
+    true;
 }
 
 
 /* =====================================================
-   PARTICLE VISIBILITY
+   VISIBILITY
 ===================================================== */
 
 function updateParticleVisibility() {
-  const visible =
-    simulationStarted;
-
   if (particlePoints) {
     particlePoints.visible =
-      visible &&
+      simulationStarted &&
       params.particleVisualization ===
       "points";
   }
 
   if (soupRenderer) {
     soupRenderer.visible =
-      visible &&
+      simulationStarted &&
       params.particleVisualization ===
       "soup";
   }
@@ -1835,7 +2103,17 @@ function updateParticleVisibility() {
     sourceMarker.visible =
       !simulationStarted;
   }
+
+  if (sourceVolumePreview) {
+    sourceVolumePreview.visible =
+      !simulationStarted;
+  }
 }
+
+
+/* =====================================================
+   PARTICLE CREATION
+===================================================== */
 
 function createParticles() {
   disposeObject(
@@ -1857,8 +2135,8 @@ function createParticles() {
     getParticleCount();
 
   /*
-    If the safety cap is active, each represented
-    particle carries a larger physical volume.
+    The total represented volume remains equal
+    to params.sourceVolume.
   */
   parcelVolume =
     params.sourceVolume /
@@ -1866,6 +2144,17 @@ function createParticles() {
 
   parcelRadius =
     getParticleRadius();
+
+  /*
+    Collision radius equals physical radius.
+    Particles therefore cannot compress into
+    one another.
+  */
+  collisionRadius =
+    parcelRadius;
+
+  sourceLayout =
+    createSourceLayout();
 
   particles = [];
 
@@ -1875,7 +2164,9 @@ function createParticles() {
     i++
   ) {
     particles.push(
-      createRandomParticle()
+      createRandomParticle(
+        i
+      )
     );
   }
 
@@ -1902,72 +2193,434 @@ function createParticles() {
 
 
 /* =====================================================
-   TERRAIN GRADIENT AND SIMULATION
+   PARTICLE COLLISIONS
 ===================================================== */
 
-function terrainGradient(
+function applyTerrainContact(
+  particle,
+  deltaTime
+) {
+  const groundY =
+    terrainHeight(
+      particle.x,
+      particle.z
+    ) +
+    parcelRadius;
+
+  if (
+    particle.y <
+    groundY
+  ) {
+    particle.y =
+      groundY;
+
+    if (
+      particle.vy < 0
+    ) {
+      particle.vy =
+        0;
+    }
+  }
+
+  const touchingGround =
+    particle.y <=
+    groundY + 0.02;
+
+  if (touchingGround) {
+    const damping =
+      Math.exp(
+        -params.materialFriction *
+        8 *
+        deltaTime
+      );
+
+    particle.vx *=
+      damping;
+
+    particle.vz *=
+      damping;
+  }
+}
+
+function collisionCellKey(
   x,
+  y,
   z
 ) {
-  const distance =
-    Math.max(
-      0.08,
-      Math.min(
-        getTerrainWidth(),
-        getTerrainDepth()
-      ) /
-      Math.max(
-        64,
-        params.terrainResolution
-      )
-    );
-
-  const left =
-    terrainHeight(
-      x - distance,
-      z
-    );
-
-  const right =
-    terrainHeight(
-      x + distance,
-      z
-    );
-
-  const back =
-    terrainHeight(
-      x,
-      z - distance
-    );
-
-  const front =
-    terrainHeight(
-      x,
-      z + distance
-    );
-
-  return {
-    dx:
-      (right - left) /
-      (2 * distance),
-
-    dz:
-      (front - back) /
-      (2 * distance)
-  };
+  return `${x}:${y}:${z}`;
 }
+
+function resolveParticleCollisions() {
+  if (
+    particles.length < 2
+  ) {
+    return;
+  }
+
+  const cellSize =
+    Math.max(
+      0.001,
+      collisionRadius * 2.1
+    );
+
+  const grid =
+    new Map();
+
+  /*
+    Broad-phase spatial hash.
+  */
+  for (
+    let i = 0;
+    i < particles.length;
+    i++
+  ) {
+    const particle =
+      particles[i];
+
+    const cellX =
+      Math.floor(
+        particle.x /
+        cellSize
+      );
+
+    const cellY =
+      Math.floor(
+        particle.y /
+        cellSize
+      );
+
+    const cellZ =
+      Math.floor(
+        particle.z /
+        cellSize
+      );
+
+    const key =
+      collisionCellKey(
+        cellX,
+        cellY,
+        cellZ
+      );
+
+    let bucket =
+      grid.get(
+        key
+      );
+
+    if (!bucket) {
+      bucket = [];
+
+      grid.set(
+        key,
+        bucket
+      );
+    }
+
+    bucket.push(
+      i
+    );
+  }
+
+  for (
+    let i = 0;
+    i < particles.length;
+    i++
+  ) {
+    const a =
+      particles[i];
+
+    const cellX =
+      Math.floor(
+        a.x /
+        cellSize
+      );
+
+    const cellY =
+      Math.floor(
+        a.y /
+        cellSize
+      );
+
+    const cellZ =
+      Math.floor(
+        a.z /
+        cellSize
+      );
+
+    for (
+      let offsetX = -1;
+      offsetX <= 1;
+      offsetX++
+    ) {
+      for (
+        let offsetY = -1;
+        offsetY <= 1;
+        offsetY++
+      ) {
+        for (
+          let offsetZ = -1;
+          offsetZ <= 1;
+          offsetZ++
+        ) {
+          const key =
+            collisionCellKey(
+              cellX + offsetX,
+              cellY + offsetY,
+              cellZ + offsetZ
+            );
+
+          const bucket =
+            grid.get(
+              key
+            );
+
+          if (!bucket) {
+            continue;
+          }
+
+          for (
+            let bucketIndex = 0;
+            bucketIndex < bucket.length;
+            bucketIndex++
+          ) {
+            const j =
+              bucket[bucketIndex];
+
+            if (
+              j <= i
+            ) {
+              continue;
+            }
+
+            const b =
+              particles[j];
+
+            let dx =
+              b.x - a.x;
+
+            let dy =
+              b.y - a.y;
+
+            let dz =
+              b.z - a.z;
+
+            const minimumDistance =
+              collisionRadius * 2;
+
+            let distance =
+              Math.hypot(
+                dx,
+                dy,
+                dz
+              );
+
+            if (
+              distance >=
+              minimumDistance
+            ) {
+              continue;
+            }
+
+            if (
+              distance < 0.000001
+            ) {
+              dx = 1;
+              dy = 0;
+              dz = 0;
+              distance = 1;
+            }
+
+            const nx =
+              dx / distance;
+
+            const ny =
+              dy / distance;
+
+            const nz =
+              dz / distance;
+
+            const penetration =
+              minimumDistance -
+              distance;
+
+            /*
+              Separate the particles so they
+              cannot occupy the same volume.
+            */
+            const correction =
+              penetration * 0.5;
+
+            a.x -=
+              nx * correction;
+
+            a.y -=
+              ny * correction;
+
+            a.z -=
+              nz * correction;
+
+            b.x +=
+              nx * correction;
+
+            b.y +=
+              ny * correction;
+
+            b.z +=
+              nz * correction;
+
+            const relativeVx =
+              b.vx - a.vx;
+
+            const relativeVy =
+              b.vy - a.vy;
+
+            const relativeVz =
+              b.vz - a.vz;
+
+            const relativeNormalVelocity =
+              relativeVx * nx +
+              relativeVy * ny +
+              relativeVz * nz;
+
+            if (
+              relativeNormalVelocity < 0
+            ) {
+              const normalImpulse =
+                -(
+                  1 +
+                  COLLISION_RESTITUTION
+                ) *
+                relativeNormalVelocity *
+                0.5;
+
+              a.vx -=
+                nx *
+                normalImpulse;
+
+              a.vy -=
+                ny *
+                normalImpulse;
+
+              a.vz -=
+                nz *
+                normalImpulse;
+
+              b.vx +=
+                nx *
+                normalImpulse;
+
+              b.vy +=
+                ny *
+                normalImpulse;
+
+              b.vz +=
+                nz *
+                normalImpulse;
+
+              /*
+                Friction opposes tangential
+                sliding between particles.
+              */
+              const tangentVx =
+                relativeVx -
+                relativeNormalVelocity *
+                nx;
+
+              const tangentVy =
+                relativeVy -
+                relativeNormalVelocity *
+                ny;
+
+              const tangentVz =
+                relativeVz -
+                relativeNormalVelocity *
+                nz;
+
+              const tangentLength =
+                Math.hypot(
+                  tangentVx,
+                  tangentVy,
+                  tangentVz
+                );
+
+              if (
+                tangentLength > 0.000001
+              ) {
+                const frictionImpulse =
+                  Math.min(
+                    tangentLength,
+                    normalImpulse *
+                    params.materialFriction
+                  );
+
+                const tx =
+                  tangentVx /
+                  tangentLength;
+
+                const ty =
+                  tangentVy /
+                  tangentLength;
+
+                const tz =
+                  tangentVz /
+                  tangentLength;
+
+                a.vx +=
+                  tx *
+                  frictionImpulse *
+                  0.5;
+
+                a.vy +=
+                  ty *
+                  frictionImpulse *
+                  0.5;
+
+                a.vz +=
+                  tz *
+                  frictionImpulse *
+                  0.5;
+
+                b.vx -=
+                  tx *
+                  frictionImpulse *
+                  0.5;
+
+                b.vy -=
+                  ty *
+                  frictionImpulse *
+                  0.5;
+
+                b.vz -=
+                  tz *
+                  frictionImpulse *
+                  0.5;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+/* =====================================================
+   SIMULATION
+===================================================== */
 
 function updateSimulation(
   deltaTime
 ) {
-  if (!particles.length) {
+  if (
+    !particles.length
+  ) {
     return;
   }
 
   const downhillForce =
     2;
 
-  const frictionFactor =
+  const horizontalFriction =
     Math.max(
       0,
       1 -
@@ -2017,23 +2670,33 @@ function updateSimulation(
       downhillForce *
       deltaTime;
 
+    /*
+      Gravity creates real vertical motion.
+    */
+    particle.vy -=
+      9.81 *
+      deltaTime;
+
     particle.vx *=
-      frictionFactor;
+      horizontalFriction;
 
     particle.vz *=
-      frictionFactor;
+      horizontalFriction;
 
-    let speed =
+    let horizontalSpeed =
       Math.hypot(
         particle.vx,
         particle.vz
       );
 
+    /*
+      Launch assistance.
+    */
     if (
       particle.launchAge <
       params.launchDuration &&
       params.startVelocity > 0 &&
-      speed <
+      horizontalSpeed <
       Math.max(
         params.startVelocity,
         params.minimumMovementSpeed
@@ -2051,7 +2714,9 @@ function updateSimulation(
           launchVelocity.vz
         );
 
-      if (launchLength > 0) {
+      if (
+        launchLength > 0
+      ) {
         const targetSpeed =
           Math.max(
             params.startVelocity,
@@ -2074,51 +2739,68 @@ function updateSimulation(
       particle.vx *
       deltaTime;
 
+    particle.y +=
+      particle.vy *
+      deltaTime;
+
     particle.z +=
       particle.vz *
       deltaTime;
 
-    speed =
+    horizontalSpeed =
       Math.hypot(
         particle.vx,
         particle.vz
       );
 
-    if (
+    particle.deposited =
       particle.launchAge >=
       params.launchDuration &&
-      speed < settlingThreshold
+      horizontalSpeed <
+      settlingThreshold;
+  }
+
+  /*
+    Multiple passes help the material form
+    stable piles instead of passing through itself.
+  */
+  for (
+    let iteration = 0;
+    iteration < COLLISION_ITERATIONS;
+    iteration++
+  ) {
+    for (
+      let i = 0;
+      i < particles.length;
+      i++
     ) {
-      const settlingFactor =
-        Math.max(
-          0,
-          1 -
-          params.materialFriction *
-          1.5 *
-          deltaTime
-        );
-
-      particle.vx *=
-        settlingFactor;
-
-      particle.vz *=
-        settlingFactor;
-
-      particle.deposited = true;
-    } else {
-      particle.deposited = false;
+      applyTerrainContact(
+        particles[i],
+        deltaTime
+      );
     }
 
-    /*
-      The particle keeps its physical radius.
-      It follows the terrain without being compressed.
-    */
-    particle.y =
-      terrainHeight(
-        particle.x,
-        particle.z
-      ) +
-      parcelRadius;
+    resolveParticleCollisions();
+
+    for (
+      let i = 0;
+      i < particles.length;
+      i++
+    ) {
+      applyTerrainContact(
+        particles[i],
+        deltaTime
+      );
+    }
+  }
+
+  for (
+    let i = 0;
+    i < particles.length;
+    i++
+  ) {
+    const particle =
+      particles[i];
 
     const outside =
       particle.x <
@@ -2158,7 +2840,9 @@ function updateSimulation(
    MODEL IMPORT
 ===================================================== */
 
-function getFileExtension(name) {
+function getFileExtension(
+  name
+) {
   return name
     .split(".")
     .pop()
@@ -2215,7 +2899,9 @@ function getPointsFromGeometry(
   return points;
 }
 
-function getPointsFromObject(object) {
+function getPointsFromObject(
+  object
+) {
   const points = [];
 
   object.updateMatrixWorld(
@@ -2484,8 +3170,8 @@ function createTerrainFromPoints(
     const point of transformedPoints
   ) {
     /*
-      X and Z are normalized independently.
-      This preserves the actual model aspect ratio.
+      Normalize X and Z independently.
+      This preserves the model proportions.
     */
     const normalizedX =
       (
@@ -2572,10 +3258,10 @@ function createTerrainFromPoints(
   rawModelPoints =
     points;
 
-  simulationStarted =
+  params.running =
     false;
 
-  params.running =
+  simulationStarted =
     false;
 
   playButton.textContent =
@@ -2583,7 +3269,7 @@ function createTerrainFromPoints(
 
   createTerrain();
   createParticles();
-  updateSourceMarker();
+  updateSourceVisuals();
 
   dropZone.classList.add(
     "loaded"
@@ -2695,9 +3381,19 @@ function load3DTerrain(
     "LOADING MODEL..."
   );
 
-  modelRotation.x = 0;
-  modelRotation.y = 0;
-  modelRotation.z = 0;
+  /*
+    Most imported files in this workflow
+    are Z-up. Automatically convert them
+    to Three.js Y-up.
+  */
+  modelRotation.x =
+    DEFAULT_IMPORTED_ROTATION_X;
+
+  modelRotation.y =
+    0;
+
+  modelRotation.z =
+    0;
 
   updateRotationUI();
 
@@ -2731,7 +3427,9 @@ function load3DTerrain(
             );
           }
         } catch (error) {
-          console.error(error);
+          console.error(
+            error
+          );
 
           setStatus(
             "OBJ PROCESSING ERROR"
@@ -2744,7 +3442,9 @@ function load3DTerrain(
       },
       undefined,
       (error) => {
-        console.error(error);
+        console.error(
+          error
+        );
 
         setStatus(
           "OBJ LOAD ERROR"
@@ -2775,11 +3475,15 @@ function load3DTerrain(
         ) {
           geometry =
             new PLYLoader()
-              .parse(buffer);
+              .parse(
+                buffer
+              );
         } else {
           geometry =
             new STLLoader()
-              .parse(buffer);
+              .parse(
+                buffer
+              );
         }
 
         const points =
@@ -2799,7 +3503,9 @@ function load3DTerrain(
           points
         );
       } catch (error) {
-        console.error(error);
+        console.error(
+          error
+        );
 
         setStatus(
           "MODEL PARSE ERROR"
@@ -2841,8 +3547,7 @@ function snapRotation(
   return THREE.MathUtils.clamp(
     Math.round(
       number / 45
-    ) *
-      45,
+    ) * 45,
     -180,
     180
   );
@@ -3107,7 +3812,9 @@ bindNumericSlider(
   terrainResolutionNumber,
   (value) => {
     params.terrainResolution =
-      Math.round(value);
+      Math.round(
+        value
+      );
 
     scheduleTerrainRebuild(
       true
@@ -3177,6 +3884,7 @@ bindNumericSlider(
     params.sourceVolume =
       value;
 
+    updateSourceVisuals();
     scheduleParticleRebuild();
 
     setStatus(
@@ -3192,7 +3900,7 @@ bindNumericSlider(
     params.sourceArea =
       value;
 
-    updateSourceMarker();
+    updateSourceVisuals();
     scheduleParticleRebuild();
 
     setStatus(
@@ -3223,15 +3931,7 @@ bindNumericSlider(
     params.particleSize =
       value;
 
-    if (
-      particleMaterial?.uniforms
-    ) {
-      particleMaterial
-        .uniforms
-        .pointSize
-        .value =
-        value;
-    }
+    updatePointMaterial();
 
     setStatus(
       `PARTICLE SCALE ${value}`
@@ -3356,16 +4056,16 @@ renderer.domElement.addEventListener(
       intersections[0].point
     );
 
-    simulationStarted =
+    params.running =
       false;
 
-    params.running =
+    simulationStarted =
       false;
 
     playButton.textContent =
       "PLAY";
 
-    updateSourceMarker();
+    updateSourceVisuals();
     createParticles();
 
     setStatus(
@@ -3452,6 +4152,13 @@ playButton.addEventListener(
         true;
 
       updateParticleVisibility();
+
+      if (
+        params.particleVisualization ===
+        "soup"
+      ) {
+        updateSoupRenderer();
+      }
     }
 
     params.running =
@@ -3483,7 +4190,7 @@ resetButton.addEventListener(
       "PLAY";
 
     createParticles();
-    updateSourceMarker();
+    updateSourceVisuals();
 
     setStatus(
       "RESET"
@@ -3507,6 +4214,7 @@ addButton.addEventListener(
     sourceVolumeNumber.value =
       params.sourceVolume;
 
+    updateSourceVisuals();
     createParticles();
 
     setStatus(
@@ -3518,17 +4226,36 @@ addButton.addEventListener(
 resetOrientationButton.addEventListener(
   "click",
   () => {
-    modelRotation.x = 0;
-    modelRotation.y = 0;
-    modelRotation.z = 0;
-
-    updateRotationUI();
-
     if (
       rawModelPoints?.length
     ) {
+      modelRotation.x =
+        DEFAULT_IMPORTED_ROTATION_X;
+
+      modelRotation.y =
+        0;
+
+      modelRotation.z =
+        0;
+
+      updateRotationUI();
       rebuildRotatedTerrain();
+
+      setStatus(
+        "IMPORT ORIENTATION RESET"
+      );
     } else {
+      modelRotation.x =
+        0;
+
+      modelRotation.y =
+        0;
+
+      modelRotation.z =
+        0;
+
+      updateRotationUI();
+
       setStatus(
         "ORIENTATION RESET"
       );
@@ -3543,13 +4270,23 @@ terrainButton.addEventListener(
       Math.random() *
       100000;
 
-    customTerrain = null;
-    rawModelPoints = null;
-    currentFileName = "";
+    customTerrain =
+      null;
 
-    modelRotation.x = 0;
-    modelRotation.y = 0;
-    modelRotation.z = 0;
+    rawModelPoints =
+      null;
+
+    currentFileName =
+      "";
+
+    modelRotation.x =
+      0;
+
+    modelRotation.y =
+      0;
+
+    modelRotation.z =
+      0;
 
     params.running =
       false;
@@ -3570,7 +4307,7 @@ terrainButton.addEventListener(
       -TERRAIN_SIZE * 0.35
     );
 
-    updateSourceMarker();
+    updateSourceVisuals();
     createParticles();
 
     dropZone.classList.remove(
@@ -3598,7 +4335,7 @@ params.particleVisualization =
 updateRotationUI();
 
 createTerrain();
-createSourceMarker();
+createSourceVisuals();
 createParticles();
 
 frameCurrentTerrain();
@@ -3666,15 +4403,7 @@ function resize() {
     height
   );
 
-  if (
-    particleMaterial?.uniforms
-  ) {
-    particleMaterial
-      .uniforms
-      .projectionScale
-      .value =
-      getProjectionScale();
-  }
+  updatePointMaterial();
 }
 
 window.addEventListener(
