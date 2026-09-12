@@ -57,7 +57,7 @@
 
             <div
               class="control"
-              data-tip="Controls friction between individual sediment particles."
+              data-tip="Friction between individual sediment particles."
             >
               <div class="label-row">
                 <label for="materialFriction">
@@ -88,7 +88,7 @@
 
             <div
               class="control"
-              data-tip="Controls resistance between the sediment and the terrain surface."
+              data-tip="Friction between sediment particles and the terrain."
             >
               <div class="label-row">
                 <label for="terrainFriction">
@@ -119,7 +119,7 @@
 
             <div
               class="control"
-              data-tip="Controls how strongly nearby particles attract one another and form stable piles."
+              data-tip="Controls how strongly nearby particles attract one another."
             >
               <div class="label-row">
                 <label for="particleCohesion">
@@ -150,11 +150,11 @@
 
             <div
               class="control"
-              data-tip="Initial movement impulse given to newly released material."
+              data-tip="Initial movement speed in metres per second."
             >
               <div class="label-row">
                 <label for="startVelocity">
-                  START VELOCITY
+                  START VELOCITY m/s
                 </label>
 
                 <input
@@ -162,8 +162,8 @@
                   class="numeric-input"
                   type="number"
                   min="0"
-                  max="5"
-                  step="0.05"
+                  max="10"
+                  step="0.1"
                   value="1"
                 >
               </div>
@@ -172,8 +172,162 @@
                 id="startVelocity"
                 type="range"
                 min="0"
+                max="10"
+                step="0.1"
+                value="1"
+              >
+            </div>
+
+
+            <div
+              class="control"
+              data-tip="Multiplier for the simulated physical time."
+            >
+              <div class="label-row">
+                <label for="simulationSpeed">
+                  SIMULATION SPEED ×
+                </label>
+
+                <input
+                  id="simulationSpeedNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="0.25"
+                  max="5"
+                  step="0.25"
+                  value="1"
+                >
+              </div>
+
+              <input
+                id="simulationSpeed"
+                type="range"
+                min="0.25"
                 max="5"
-                step="0.05"
+                step="0.25"
+                value="1"
+              >
+            </div>
+
+
+            <div class="control">
+              <div class="label-row">
+                <label for="startDirectionMode">
+                  START DIRECTION
+                </label>
+
+                <select id="startDirectionMode">
+                  <option value="downhill">
+                    DOWNHILL
+                  </option>
+
+                  <option value="fixed">
+                    FIXED HEADING
+                  </option>
+
+                  <option value="radial">
+                    RADIAL FROM SOURCE
+                  </option>
+
+                  <option value="vector">
+                    USER VECTOR
+                  </option>
+                </select>
+              </div>
+            </div>
+
+
+            <div
+              id="fixedDirectionControl"
+              class="control direction-control hidden"
+              data-tip="Heading in degrees. 0° points toward positive Z, 90° points toward positive X."
+            >
+              <div class="label-row">
+                <label for="directionAngle">
+                  HEADING °
+                </label>
+
+                <input
+                  id="directionAngleNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="-180"
+                  max="180"
+                  step="1"
+                  value="0"
+                >
+              </div>
+
+              <input
+                id="directionAngle"
+                type="range"
+                min="-180"
+                max="180"
+                step="1"
+                value="0"
+              >
+            </div>
+
+
+            <div
+              id="userDirectionXControl"
+              class="control direction-control hidden"
+              data-tip="User-defined horizontal direction vector X component."
+            >
+              <div class="label-row">
+                <label for="directionX">
+                  VECTOR X
+                </label>
+
+                <input
+                  id="directionXNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="-1"
+                  max="1"
+                  step="0.01"
+                  value="0"
+                >
+              </div>
+
+              <input
+                id="directionX"
+                type="range"
+                min="-1"
+                max="1"
+                step="0.01"
+                value="0"
+              >
+            </div>
+
+
+            <div
+              id="userDirectionZControl"
+              class="control direction-control hidden"
+              data-tip="User-defined horizontal direction vector Z component."
+            >
+              <div class="label-row">
+                <label for="directionZ">
+                  VECTOR Z
+                </label>
+
+                <input
+                  id="directionZNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="-1"
+                  max="1"
+                  step="0.01"
+                  value="1"
+                >
+              </div>
+
+              <input
+                id="directionZ"
+                type="range"
+                min="-1"
+                max="1"
+                step="0.01"
                 value="1"
               >
             </div>
@@ -191,7 +345,7 @@
 
             <div
               class="control"
-              data-tip="Higher values create more terrain detail but require more computation."
+              data-tip="Number of terrain subdivisions."
             >
               <div class="label-row">
                 <label for="terrainResolution">
@@ -232,11 +386,11 @@
 
             <div
               class="control"
-              data-tip="Uniform scale applied to the imported terrain."
+              data-tip="Visual multiplier applied to the terrain."
             >
               <div class="label-row">
                 <label for="modelScale">
-                  MODEL SCALE
+                  MODEL SCALE ×
                 </label>
 
                 <input
@@ -263,15 +417,46 @@
 
             <div
               class="control"
-              data-tip="Scales terrain height without changing its horizontal dimensions."
+              data-tip="Physical conversion from imported model units to metres."
             >
               <div class="label-row">
-                <label for="verticalExaggeration">
-                  VERTICAL SCALE
+                <label for="metersPerModelUnit">
+                  METRES / MODEL UNIT
                 </label>
 
                 <input
-                  id="verticalExaggerationNumber"
+                  id="metersPerModelUnitNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="0.01"
+                  max="100"
+                  step="0.01"
+                  value="1"
+                >
+              </div>
+
+              <input
+                id="metersPerModelUnit"
+                type="range"
+                min="0.01"
+                max="100"
+                step="0.01"
+                value="1"
+              >
+            </div>
+
+
+            <div
+              class="control"
+              data-tip="Vertical terrain exaggeration multiplier."
+            >
+              <div class="label-row">
+                <label for="verticalExaggeration">
+                  VERTICAL SCALE ×
+                </label>
+
+                <input
+                  id="verticalScaleNumber"
                   class="numeric-input"
                   type="number"
                   min="0.1"
@@ -294,11 +479,11 @@
 
             <div
               class="control"
-              data-tip="Scales the imported model depth axis. The default is 1.0."
+              data-tip="Independent depth-axis multiplier. The default is 1.0."
             >
               <div class="label-row">
                 <label for="depthScale">
-                  Z AXIS SCALE
+                  Z AXIS SCALE ×
                 </label>
 
                 <input
@@ -335,7 +520,7 @@
 
             <div
               class="control"
-              data-tip="Total physical source material volume."
+              data-tip="Total physical volume of source material."
             >
               <div class="label-row">
                 <label for="sourceVolume">
@@ -366,7 +551,7 @@
 
             <div
               class="control"
-              data-tip="Horizontal area covered by the initial source material."
+              data-tip="Horizontal area of the source material release."
             >
               <div class="label-row">
                 <label for="sourceArea">
@@ -397,11 +582,11 @@
 
             <div
               class="control"
-              data-tip="Number of simulated particles generated per cubic metre of source material."
+              data-tip="Number of simulated particles generated per cubic metre."
             >
               <div class="label-row">
                 <label for="particleDensity">
-                  PARTICLE / m³
+                  PARTICLES / m³
                 </label>
 
                 <input
@@ -447,11 +632,11 @@
 
             <div
               class="control"
-              data-tip="Controls the distance between particle centers at which the soup remains visually connected."
+              data-tip="Particles connect visually when their centers are within this multiple of their physical diameter."
             >
               <div class="label-row">
                 <label for="soupLinkRange">
-                  SOUP LINK RANGE
+                  SOUP LINK RANGE × DIAMETER
                 </label>
 
                 <input
@@ -476,13 +661,44 @@
             </div>
 
 
+            <div class="control">
+              <div class="label-row">
+                <label for="colorMode">
+                  COLOR BY
+                </label>
+
+                <select id="colorMode">
+                  <option value="material">
+                    MATERIAL
+                  </option>
+
+                  <option value="velocity">
+                    VELOCITY
+                  </option>
+
+                  <option value="distance">
+                    DISTANCE TRAVELED
+                  </option>
+
+                  <option value="thickness">
+                    FLOW THICKNESS
+                  </option>
+
+                  <option value="age">
+                    PARTICLE AGE
+                  </option>
+                </select>
+              </div>
+            </div>
+
+
             <div
               class="control"
-              data-tip="Visual scale for point particles only. Physical particle volume remains unchanged."
+              data-tip="Visual scale for point particles. Physical particle volume is unchanged."
             >
               <div class="label-row">
                 <label for="particleSize">
-                  PARTICLE DISPLAY SCALE
+                  PARTICLE DISPLAY SCALE ×
                 </label>
 
                 <input
@@ -520,7 +736,7 @@
             <div class="control">
               <div class="label-row">
                 <label for="rotationX">
-                  ROTATE X
+                  ROTATE X °
                 </label>
 
                 <input
@@ -548,7 +764,7 @@
             <div class="control">
               <div class="label-row">
                 <label for="rotationY">
-                  ROTATE Y
+                  ROTATE Y °
                 </label>
 
                 <input
@@ -576,7 +792,7 @@
             <div class="control">
               <div class="label-row">
                 <label for="rotationZ">
-                  ROTATE Z
+                  ROTATE Z °
                 </label>
 
                 <input
@@ -649,8 +865,6 @@
 
       </section>
 
-
-      <!-- MODEL IMPORT -->
 
       <div id="dropZone">
         DROP 3D TERRAIN HERE

@@ -53,8 +53,6 @@ select {
   position: absolute;
   inset: 0;
   z-index: 1;
-
-  pointer-events: auto;
 }
 
 #viewer canvas {
@@ -81,7 +79,7 @@ select {
   left: 24px;
   z-index: 10;
 
-  width: 325px;
+  width: 340px;
   max-height: calc(100vh - 48px);
 
   overflow-y: auto;
@@ -133,7 +131,7 @@ h1 {
 }
 
 .description {
-  max-width: 250px;
+  max-width: 260px;
 
   margin: 18px 0 28px;
 
@@ -216,6 +214,10 @@ details .control:last-child {
   margin-bottom: 8px;
 }
 
+.direction-control.hidden {
+  display: none;
+}
+
 .label-row {
   display: flex;
   align-items: center;
@@ -227,7 +229,7 @@ details .control:last-child {
 
 label {
   font-size: 9px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
 }
 
 .control[data-tip]::after {
@@ -236,7 +238,7 @@ label {
   bottom: calc(100% + 8px);
   z-index: 50;
 
-  width: 250px;
+  width: 260px;
 
   padding: 8px 9px;
 
@@ -272,7 +274,7 @@ label {
 ===================================================== */
 
 .numeric-input {
-  width: 82px;
+  width: 88px;
   min-width: 0;
 
   padding: 3px 5px;
@@ -305,7 +307,7 @@ label {
 ===================================================== */
 
 select {
-  width: 145px;
+  width: 155px;
   min-width: 0;
 
   padding: 4px 6px;
@@ -574,14 +576,14 @@ footer {
   }
 
   .numeric-input {
-    width: 72px;
+    width: 76px;
   }
 
   select {
-    width: 130px;
+    width: 140px;
   }
 
   .control[data-tip]::after {
-    width: 210px;
+    width: 220px;
   }
 }
