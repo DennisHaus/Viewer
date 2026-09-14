@@ -88,7 +88,7 @@
 
             <div
               class="control"
-              data-tip="Friction between sediment particles and the terrain."
+              data-tip="Friction between sediment particles and the terrain surface."
             >
               <div class="label-row">
                 <label for="terrainFriction">
@@ -150,7 +150,7 @@
 
             <div
               class="control"
-              data-tip="Initial movement speed in metres per second."
+              data-tip="Initial movement velocity in metres per second."
             >
               <div class="label-row">
                 <label for="startVelocity">
@@ -181,7 +181,7 @@
 
             <div
               class="control"
-              data-tip="Multiplier for the simulated physical time."
+              data-tip="Multiplier for simulated physical time."
             >
               <div class="label-row">
                 <label for="simulationSpeed">
@@ -240,7 +240,7 @@
             <div
               id="fixedDirectionControl"
               class="control direction-control hidden"
-              data-tip="Heading in degrees. 0° points toward positive Z, 90° points toward positive X."
+              data-tip="0° points toward positive Z. 90° points toward positive X."
             >
               <div class="label-row">
                 <label for="directionAngle">
@@ -272,7 +272,7 @@
             <div
               id="userDirectionXControl"
               class="control direction-control hidden"
-              data-tip="User-defined horizontal direction vector X component."
+              data-tip="User-defined horizontal direction X component."
             >
               <div class="label-row">
                 <label for="directionX">
@@ -304,7 +304,7 @@
             <div
               id="userDirectionZControl"
               class="control direction-control hidden"
-              data-tip="User-defined horizontal direction vector Z component."
+              data-tip="User-defined horizontal direction Z component."
             >
               <div class="label-row">
                 <label for="directionZ">
@@ -345,7 +345,7 @@
 
             <div
               class="control"
-              data-tip="Number of terrain subdivisions."
+              data-tip="Number of subdivisions used to construct the terrain."
             >
               <div class="label-row">
                 <label for="terrainResolution">
@@ -479,7 +479,7 @@
 
             <div
               class="control"
-              data-tip="Independent depth-axis multiplier. The default is 1.0."
+              data-tip="Independent terrain depth-axis multiplier."
             >
               <div class="label-row">
                 <label for="depthScale">
@@ -518,6 +518,85 @@
 
           <div class="details-body">
 
+            <div class="control">
+              <div class="label-row">
+                <label for="releaseShapeMode">
+                  RELEASE SHAPE
+                </label>
+
+                <select id="releaseShapeMode">
+                  <option value="rectangle">
+                    SQUARE AREA
+                  </option>
+
+                  <option value="polygon">
+                    CUSTOM POLYGON
+                  </option>
+                </select>
+              </div>
+            </div>
+
+
+            <div
+              id="rectangleAreaControl"
+              class="control"
+              data-tip="Area of the square release region."
+            >
+              <div class="label-row">
+                <label for="sourceArea">
+                  RELEASE AREA m²
+                </label>
+
+                <input
+                  id="sourceAreaNumber"
+                  class="numeric-input"
+                  type="number"
+                  min="100"
+                  max="100000"
+                  step="100"
+                  value="100"
+                >
+              </div>
+
+              <input
+                id="sourceArea"
+                type="range"
+                min="100"
+                max="100000"
+                step="100"
+                value="100"
+              >
+            </div>
+
+
+            <div
+              id="customShapeControl"
+              class="shape-control hidden"
+            >
+              <button
+                id="drawReleaseShapeButton"
+                type="button"
+              >
+                DRAW RELEASE SHAPE
+              </button>
+
+              <button
+                id="clearReleaseShapeButton"
+                type="button"
+              >
+                CLEAR CUSTOM SHAPE
+              </button>
+
+              <div id="drawShapeHint">
+                Click terrain points. Press ENTER to finish or ESCAPE to cancel.
+              </div>
+
+              <div id="releaseAreaReadout">
+                NO CUSTOM SHAPE
+              </div>
+            </div>
+
+
             <div
               class="control"
               data-tip="Total physical volume of source material."
@@ -545,37 +624,6 @@
                 max="1000000"
                 step="1000"
                 value="10000"
-              >
-            </div>
-
-
-            <div
-              class="control"
-              data-tip="Horizontal area of the source material release."
-            >
-              <div class="label-row">
-                <label for="sourceArea">
-                  RELEASE AREA m²
-                </label>
-
-                <input
-                  id="sourceAreaNumber"
-                  class="numeric-input"
-                  type="number"
-                  min="100"
-                  max="100000"
-                  step="100"
-                  value="100"
-                >
-              </div>
-
-              <input
-                id="sourceArea"
-                type="range"
-                min="100"
-                max="100000"
-                step="100"
-                value="100"
               >
             </div>
 
@@ -632,7 +680,7 @@
 
             <div
               class="control"
-              data-tip="Particles connect visually when their centers are within this multiple of their physical diameter."
+              data-tip="Maximum center-to-center distance for particles to remain in the same connected soup."
             >
               <div class="label-row">
                 <label for="soupLinkRange">
@@ -694,7 +742,7 @@
 
             <div
               class="control"
-              data-tip="Visual scale for point particles. Physical particle volume is unchanged."
+              data-tip="Visual scale for point particles only."
             >
               <div class="label-row">
                 <label for="particleSize">
@@ -866,6 +914,8 @@
       </section>
 
 
+      <!-- MODEL IMPORT -->
+
       <div id="dropZone">
         DROP 3D TERRAIN HERE
         <span>PLY / STL / OBJ</span>
@@ -888,7 +938,7 @@
 
 
       <div id="sourceHint">
-        SHIFT + LEFT CLICK TO PLACE SOURCE
+        SHIFT + LEFT CLICK TO MOVE SOURCE
       </div>
 
 

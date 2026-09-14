@@ -122,17 +122,38 @@ const depthScaleInput =
 const depthScaleNumber =
   $("depthScaleNumber");
 
-const sourceVolumeInput =
-  $("sourceVolume");
+const releaseShapeModeInput =
+  $("releaseShapeMode");
 
-const sourceVolumeNumber =
-  $("sourceVolumeNumber");
+const rectangleAreaControl =
+  $("rectangleAreaControl");
+
+const customShapeControl =
+  $("customShapeControl");
 
 const sourceAreaInput =
   $("sourceArea");
 
 const sourceAreaNumber =
   $("sourceAreaNumber");
+
+const drawReleaseShapeButton =
+  $("drawReleaseShapeButton");
+
+const clearReleaseShapeButton =
+  $("clearReleaseShapeButton");
+
+const drawShapeHint =
+  $("drawShapeHint");
+
+const releaseAreaReadout =
+  $("releaseAreaReadout");
+
+const sourceVolumeInput =
+  $("sourceVolume");
+
+const sourceVolumeNumber =
+  $("sourceVolumeNumber");
 
 const particleDensityInput =
   $("particleDensity");
@@ -268,7 +289,7 @@ viewer.appendChild(
 
 
 /* =====================================================
-   CONTROLS
+   ORBIT CONTROLS
 ===================================================== */
 
 const controls =
@@ -288,15 +309,26 @@ controls.enablePan = true;
 controls.enableZoom = true;
 controls.enableDamping = true;
 
-controls.dampingFactor = 0.08;
-controls.screenSpacePanning = true;
+controls.dampingFactor =
+  0.08;
 
-controls.rotateSpeed = 0.7;
-controls.panSpeed = 0.8;
-controls.zoomSpeed = 0.9;
+controls.screenSpacePanning =
+  true;
 
-controls.minDistance = 0.5;
-controls.maxDistance = 10000000;
+controls.rotateSpeed =
+  0.7;
+
+controls.panSpeed =
+  0.8;
+
+controls.zoomSpeed =
+  0.9;
+
+controls.minDistance =
+  0.5;
+
+controls.maxDistance =
+  10000000;
 
 controls.minPolarAngle =
   0.05;
@@ -369,8 +401,10 @@ const params = {
   verticalExaggeration: 1,
   depthScale: 1,
 
-  sourceVolume: 10000,
+  releaseShapeMode: "rectangle",
   sourceArea: 100,
+
+  sourceVolume: 10000,
   particleDensity: 1,
 
   particleVisualization: "points",
@@ -460,10 +494,13 @@ let rawModelPoints =
 let currentFileName =
   "";
 
-let sourceMarker =
+let releaseOutline =
   null;
 
-let sourceVolumePreview =
+let releaseVolumePreview =
+  null;
+
+let drawingPreviewLine =
   null;
 
 let particles =
@@ -505,6 +542,15 @@ let simulationAccumulator =
 let soupUpdateAccumulator =
   0;
 
+let drawingReleaseShape =
+  false;
+
+let drawingPoints =
+  [];
+
+let releasePolygonLocal =
+  null;
+
 const modelRotation = {
   x: 0,
   y: 0,
@@ -518,11 +564,11 @@ const sourceLocation =
     -TERRAIN_SIZE * 0.35
   );
 
-const tempColor =
-  new THREE.Color();
+const raycaster =
+  new THREE.Raycaster();
 
-const tempColorB =
-  new THREE.Color();
+const pointer =
+  new THREE.Vector2();
 
 
 /* =====================================================
@@ -1157,174 +1203,1235 @@ function createTerrain() {
 
 
 /* =====================================================
-   SOURCE VOLUME
+   POLYGON GEOMETRY
 ===================================================== */
 
-function getReleaseSideLength() {
-  const requestedSide =
+function polygonSignedArea(
+  points
+) {
+  let area =
+    0;
+
+  for (
+    let i = 0;
+    i < points.length;
+    i++
+  ) {
+    const a =
+      points[i];
+
+    const b =
+      points[
+        (i + 1) %
+        points.length
+      ];
+
+    area +=
+      a.x * b.z -
+      b.x * a.z;
+  }
+
+  return area *
+    0.5;
+}
+
+function polygonArea(
+  points
+) {
+  return Math.abs(
+    polygonSignedArea(
+      points
+    )
+  );
+}
+
+function polygonCentroid(
+  points
+) {
+  const signedArea =
+    polygonSignedArea(
+      points
+    );
+
+  if (
+    Math.abs(
+      signedArea
+    ) < 0.000001
+  ) {
+    const average =
+      points.reduce(
+        (sum, point) => {
+          sum.x +=
+            point.x;
+
+          sum.z +=
+            point.z;
+
+          return sum;
+        },
+        {
+          x: 0,
+          z: 0
+        }
+      );
+
+    return {
+      x:
+        average.x /
+        points.length,
+
+      z:
+        average.z /
+        points.length
+    };
+  }
+
+  let x =
+    0;
+
+  let z =
+    0;
+
+  for (
+    let i = 0;
+    i < points.length;
+    i++
+  ) {
+    const a =
+      points[i];
+
+    const b =
+      points[
+        (i + 1) %
+        points.length
+      ];
+
+    const cross =
+      a.x * b.z -
+      b.x * a.z;
+
+    x +=
+      (
+        a.x +
+        b.x
+      ) *
+      cross;
+
+    z +=
+      (
+        a.z +
+        b.z
+      ) *
+      cross;
+  }
+
+  return {
+    x:
+      x /
+      (
+        6 *
+        signedArea
+      ),
+
+    z:
+      z /
+      (
+        6 *
+        signedArea
+      )
+  };
+}
+
+function polygonBounds(
+  points
+) {
+  const bounds = {
+    minX: Infinity,
+    maxX: -Infinity,
+    minZ: Infinity,
+    maxZ: -Infinity
+  };
+
+  for (
+    const point of points
+  ) {
+    bounds.minX =
+      Math.min(
+        bounds.minX,
+        point.x
+      );
+
+    bounds.maxX =
+      Math.max(
+        bounds.maxX,
+        point.x
+      );
+
+    bounds.minZ =
+      Math.min(
+        bounds.minZ,
+        point.z
+      );
+
+    bounds.maxZ =
+      Math.max(
+        bounds.maxZ,
+        point.z
+      );
+  }
+
+  return bounds;
+}
+
+function pointInPolygon(
+  point,
+  polygon
+) {
+  let inside =
+    false;
+
+  for (
+    let i = 0,
+    j = polygon.length - 1;
+    i < polygon.length;
+    j = i++
+  ) {
+    const xi =
+      polygon[i].x;
+
+    const zi =
+      polygon[i].z;
+
+    const xj =
+      polygon[j].x;
+
+    const zj =
+      polygon[j].z;
+
+    const intersects =
+      (
+        zi > point.z
+      ) !== (
+        zj > point.z
+      ) &&
+      point.x <
+      (
+        xj - xi
+      ) *
+      (
+        point.z - zi
+      ) /
+      (
+        zj - zi
+      ) +
+      xi;
+
+    if (intersects) {
+      inside =
+        !inside;
+    }
+  }
+
+  return inside;
+}
+
+function orientation(
+  a,
+  b,
+  c
+) {
+  return (
+    b.x - a.x
+  ) *
+  (
+    c.z - a.z
+  ) -
+  (
+    b.z - a.z
+  ) *
+  (
+    c.x - a.x
+  );
+}
+
+function segmentsIntersect(
+  a,
+  b,
+  c,
+  d
+) {
+  const epsilon =
+    0.000001;
+
+  const o1 =
+    orientation(
+      a,
+      b,
+      c
+    );
+
+  const o2 =
+    orientation(
+      a,
+      b,
+      d
+    );
+
+  const o3 =
+    orientation(
+      c,
+      d,
+      a
+    );
+
+  const o4 =
+    orientation(
+      c,
+      d,
+      b
+    );
+
+  const proper =
+    (
+      o1 > epsilon &&
+      o2 < -epsilon ||
+      o1 < -epsilon &&
+      o2 > epsilon
+    ) &&
+    (
+      o3 > epsilon &&
+      o4 < -epsilon ||
+      o3 < -epsilon &&
+      o4 > epsilon
+    );
+
+  return proper;
+}
+
+function polygonSelfIntersects(
+  points
+) {
+  for (
+    let i = 0;
+    i < points.length;
+    i++
+  ) {
+    const a =
+      points[i];
+
+    const b =
+      points[
+        (i + 1) %
+        points.length
+      ];
+
+    for (
+      let j = i + 1;
+      j < points.length;
+      j++
+    ) {
+      if (
+        j === i ||
+        j === (
+          i + 1
+        ) %
+        points.length ||
+        (
+          j + 1
+        ) %
+        points.length === i
+      ) {
+        continue;
+      }
+
+      const c =
+        points[j];
+
+      const d =
+        points[
+          (j + 1) %
+          points.length
+        ];
+
+      if (
+        segmentsIntersect(
+          a,
+          b,
+          c,
+          d
+        )
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function getRectanglePolygonLocal() {
+  const side =
     Math.sqrt(
       params.sourceArea
     );
 
-  return Math.min(
-    requestedSide,
-    getTerrainWidth() * 0.9,
-    getTerrainDepth() * 0.9
+  const half =
+    side *
+    0.5;
+
+  return [
+    {
+      x: -half,
+      z: -half
+    },
+    {
+      x: half,
+      z: -half
+    },
+    {
+      x: half,
+      z: half
+    },
+    {
+      x: -half,
+      z: half
+    }
+  ];
+}
+
+function hasValidCustomPolygon() {
+  return (
+    params.releaseShapeMode ===
+      "polygon" &&
+    releasePolygonLocal &&
+    releasePolygonLocal.length >= 3 &&
+    polygonArea(
+      releasePolygonLocal
+    ) > 1
   );
 }
 
-function getEffectiveReleaseArea() {
-  const side =
-    getReleaseSideLength();
+function getReleasePolygonLocal() {
+  if (
+    hasValidCustomPolygon()
+  ) {
+    return releasePolygonLocal;
+  }
 
-  return side *
-    side;
+  if (
+    params.releaseShapeMode ===
+    "polygon"
+  ) {
+    return null;
+  }
+
+  return getRectanglePolygonLocal();
+}
+
+function getReleasePolygonWorld() {
+  const local =
+    getReleasePolygonLocal();
+
+  if (!local) {
+    return null;
+  }
+
+  return local.map(
+    (point) => {
+      return {
+        x:
+          sourceLocation.x +
+          point.x,
+
+        z:
+          sourceLocation.z +
+          point.z
+      };
+    }
+  );
+}
+
+function getReleaseArea() {
+  const polygon =
+    getReleasePolygonLocal();
+
+  if (!polygon) {
+    return 0;
+  }
+
+  return polygonArea(
+    polygon
+  );
 }
 
 function getSourceHeight() {
+  const area =
+    getReleaseArea();
+
+  if (
+    area <= 0
+  ) {
+    return 0;
+  }
+
   return params.sourceVolume /
-    getEffectiveReleaseArea();
+    area;
 }
 
-function createSourceVisuals() {
-  disposeObject(
-    sourceMarker
+
+/* =====================================================
+   RELEASE SHAPE DISPLAY
+===================================================== */
+
+function createReleaseOutline(
+  worldPolygon
+) {
+  if (
+    !worldPolygon ||
+    worldPolygon.length < 3
+  ) {
+    return null;
+  }
+
+  const positions =
+    new Float32Array(
+      (
+        worldPolygon.length +
+        1
+      ) *
+      3
+    );
+
+  for (
+    let i = 0;
+    i < worldPolygon.length;
+    i++
+  ) {
+    const point =
+      worldPolygon[i];
+
+    positions[i * 3] =
+      point.x;
+
+    positions[i * 3 + 1] =
+      terrainHeight(
+        point.x,
+        point.z
+      ) +
+      SURFACE_CLEARANCE;
+
+    positions[i * 3 + 2] =
+      point.z;
+  }
+
+  const last =
+    worldPolygon[0];
+
+  const lastIndex =
+    worldPolygon.length;
+
+  positions[lastIndex * 3] =
+    last.x;
+
+  positions[lastIndex * 3 + 1] =
+    terrainHeight(
+      last.x,
+      last.z
+    ) +
+    SURFACE_CLEARANCE;
+
+  positions[lastIndex * 3 + 2] =
+    last.z;
+
+  const geometry =
+    new THREE.BufferGeometry();
+
+  geometry.setAttribute(
+    "position",
+    new THREE.BufferAttribute(
+      positions,
+      3
+    )
   );
 
-  disposeObject(
-    sourceVolumePreview
-  );
-
-  sourceMarker =
-    new THREE.Mesh(
-      new THREE.RingGeometry(
-        0.8,
-        1,
-        32
-      ),
-      new THREE.MeshBasicMaterial({
+  const line =
+    new THREE.Line(
+      geometry,
+      new THREE.LineBasicMaterial({
         color: 0x9bd7d0,
         transparent: true,
         opacity: 0.95,
-        side: THREE.DoubleSide,
         depthTest: false
       })
     );
 
-  sourceMarker.rotation.x =
-    -Math.PI / 2;
+  line.renderOrder =
+    40;
 
-  sourceMarker.renderOrder =
-    30;
+  return line;
+}
 
-  scene.add(
-    sourceMarker
+function createReleaseVolumeMesh(
+  worldPolygon
+) {
+  if (
+    !worldPolygon ||
+    worldPolygon.length < 3
+  ) {
+    return null;
+  }
+
+  const vertexCount =
+    worldPolygon.length;
+
+  const height =
+    getSourceHeight();
+
+  const positions =
+    new Float32Array(
+      vertexCount *
+      2 *
+      3
+    );
+
+  for (
+    let i = 0;
+    i < vertexCount;
+    i++
+  ) {
+    const point =
+      worldPolygon[i];
+
+    const baseY =
+      terrainHeight(
+        point.x,
+        point.z
+      ) +
+      SURFACE_CLEARANCE;
+
+    positions[i * 3] =
+      point.x;
+
+    positions[i * 3 + 1] =
+      baseY;
+
+    positions[i * 3 + 2] =
+      point.z;
+
+    const topIndex =
+      vertexCount +
+      i;
+
+    positions[topIndex * 3] =
+      point.x;
+
+    positions[topIndex * 3 + 1] =
+      baseY +
+      height;
+
+    positions[topIndex * 3 + 2] =
+      point.z;
+  }
+
+  const polygon2D =
+    worldPolygon.map(
+      (point) => {
+        return {
+          x: point.x,
+          y: point.z
+        };
+      }
+    );
+
+  const triangles =
+    THREE.ShapeUtils.triangulateShape(
+      polygon2D,
+      []
+    );
+
+  const indices =
+    [];
+
+  for (
+    const triangle of triangles
+  ) {
+    const a =
+      triangle[0];
+
+    const b =
+      triangle[1];
+
+    const c =
+      triangle[2];
+
+    indices.push(
+      vertexCount + a,
+      vertexCount + b,
+      vertexCount + c
+    );
+
+    indices.push(
+      c,
+      b,
+      a
+    );
+  }
+
+  for (
+    let i = 0;
+    i < vertexCount;
+    i++
+  ) {
+    const next =
+      (
+        i + 1
+      ) %
+      vertexCount;
+
+    const baseA =
+      i;
+
+    const baseB =
+      next;
+
+    const topA =
+      vertexCount +
+      i;
+
+    const topB =
+      vertexCount +
+      next;
+
+    indices.push(
+      baseA,
+      baseB,
+      topB
+    );
+
+    indices.push(
+      baseA,
+      topB,
+      topA
+    );
+  }
+
+  const geometry =
+    new THREE.BufferGeometry();
+
+  geometry.setAttribute(
+    "position",
+    new THREE.BufferAttribute(
+      positions,
+      3
+    )
   );
 
-  sourceVolumePreview =
+  geometry.setIndex(
+    indices
+  );
+
+  geometry.computeVertexNormals();
+
+  const mesh =
     new THREE.Mesh(
-      new THREE.BoxGeometry(
-        1,
-        1,
-        1
-      ),
+      geometry,
       new THREE.MeshBasicMaterial({
         color: 0x54b8b3,
         transparent: true,
-        opacity: 0.16,
-        wireframe: true,
+        opacity: 0.15,
+        side: THREE.DoubleSide,
         depthWrite: false
       })
     );
 
-  sourceVolumePreview.renderOrder =
+  mesh.renderOrder =
     20;
 
-  scene.add(
-    sourceVolumePreview
-  );
-
-  updateSourceVisuals();
+  return mesh;
 }
 
 function updateSourceVisuals() {
-  if (!terrainMesh) {
+  disposeObject(
+    releaseOutline
+  );
+
+  disposeObject(
+    releaseVolumePreview
+  );
+
+  releaseOutline =
+    null;
+
+  releaseVolumePreview =
+    null;
+
+  const worldPolygon =
+    getReleasePolygonWorld();
+
+  if (
+    worldPolygon
+  ) {
+    releaseOutline =
+      createReleaseOutline(
+        worldPolygon
+      );
+
+    releaseVolumePreview =
+      createReleaseVolumeMesh(
+        worldPolygon
+      );
+
+    if (releaseOutline) {
+      releaseOutline.visible =
+        !simulationStarted;
+
+      scene.add(
+        releaseOutline
+      );
+    }
+
+    if (releaseVolumePreview) {
+      releaseVolumePreview.visible =
+        !simulationStarted;
+
+      scene.add(
+        releaseVolumePreview
+      );
+    }
+
+    sourceLocation.y =
+      terrainHeight(
+        sourceLocation.x,
+        sourceLocation.z
+      ) +
+      SURFACE_CLEARANCE;
+  }
+
+  updateReleaseShapeControls();
+}
+
+function updateReleaseShapeControls() {
+  const polygonMode =
+    params.releaseShapeMode ===
+    "polygon";
+
+  rectangleAreaControl.classList.toggle(
+    "hidden",
+    polygonMode
+  );
+
+  customShapeControl.classList.toggle(
+    "hidden",
+    !polygonMode
+  );
+
+  sourceAreaInput.disabled =
+    polygonMode;
+
+  sourceAreaNumber.disabled =
+    polygonMode;
+
+  if (
+    polygonMode &&
+    hasValidCustomPolygon()
+  ) {
+    releaseAreaReadout.textContent =
+      `DRAWN AREA ${formatNumber(
+        getReleaseArea()
+      )} m²`;
+  } else if (polygonMode) {
+    releaseAreaReadout.textContent =
+      "NO CUSTOM SHAPE";
+  } else {
+    releaseAreaReadout.textContent =
+      `AREA ${formatNumber(
+        getReleaseArea()
+      )} m²`;
+  }
+}
+
+
+/* =====================================================
+   DRAWING CUSTOM POLYGON
+===================================================== */
+
+function getTerrainIntersection(
+  event
+) {
+  if (
+    !terrainMesh
+  ) {
+    return null;
+  }
+
+  const rect =
+    renderer.domElement
+      .getBoundingClientRect();
+
+  pointer.x =
+    (
+      (
+        event.clientX -
+        rect.left
+      ) /
+      rect.width
+    ) *
+    2 -
+    1;
+
+  pointer.y =
+    -(
+      (
+        event.clientY -
+        rect.top
+      ) /
+      rect.height
+    ) *
+    2 +
+    1;
+
+  raycaster.setFromCamera(
+    pointer,
+    camera
+  );
+
+  const intersections =
+    raycaster.intersectObject(
+      terrainMesh,
+      false
+    );
+
+  if (
+    !intersections.length
+  ) {
+    return null;
+  }
+
+  return intersections[0].point;
+}
+
+function setDrawingPreview(
+  extraPoint = null
+) {
+  disposeObject(
+    drawingPreviewLine
+  );
+
+  drawingPreviewLine =
+    null;
+
+  const points =
+    drawingPoints.map(
+      (point) => {
+        return {
+          x: point.x,
+          z: point.z
+        };
+      }
+    );
+
+  if (
+    extraPoint
+  ) {
+    points.push({
+      x: extraPoint.x,
+      z: extraPoint.z
+    });
+  }
+
+  if (
+    points.length < 2
+  ) {
     return;
   }
 
-  const terrainWidth =
-    getTerrainWidth();
+  const positions =
+    new Float32Array(
+      points.length *
+      3
+    );
 
-  const terrainDepth =
-    getTerrainDepth();
+  for (
+    let i = 0;
+    i < points.length;
+    i++
+  ) {
+    const point =
+      points[i];
 
-  const side =
-    getReleaseSideLength();
+    positions[i * 3] =
+      point.x;
 
-  const halfSide =
-    side * 0.5;
+    positions[i * 3 + 1] =
+      terrainHeight(
+        point.x,
+        point.z
+      ) +
+      SURFACE_CLEARANCE *
+      2;
+
+    positions[i * 3 + 2] =
+      point.z;
+  }
+
+  const geometry =
+    new THREE.BufferGeometry();
+
+  geometry.setAttribute(
+    "position",
+    new THREE.BufferAttribute(
+      positions,
+      3
+    )
+  );
+
+  drawingPreviewLine =
+    new THREE.Line(
+      geometry,
+      new THREE.LineBasicMaterial({
+        color: 0xffd166,
+        transparent: true,
+        opacity: 0.95,
+        depthTest: false
+      })
+    );
+
+  drawingPreviewLine.renderOrder =
+    50;
+
+  scene.add(
+    drawingPreviewLine
+  );
+}
+
+function startDrawingReleaseShape() {
+  if (
+    drawingReleaseShape
+  ) {
+    return;
+  }
+
+  stopSimulation(
+    false
+  );
+
+  drawingReleaseShape =
+    true;
+
+  drawingPoints =
+    [];
+
+  controls.enabled =
+    false;
+
+  renderer.domElement.classList.add(
+    "drawing"
+  );
+
+  if (releaseOutline) {
+    releaseOutline.visible =
+      false;
+  }
+
+  if (releaseVolumePreview) {
+    releaseVolumePreview.visible =
+      false;
+  }
+
+  drawShapeHint.textContent =
+    "Click terrain points. Press ENTER to finish or ESCAPE to cancel.";
+
+  setStatus(
+    "DRAWING RELEASE SHAPE"
+  );
+}
+
+function cancelDrawingReleaseShape() {
+  drawingReleaseShape =
+    false;
+
+  drawingPoints =
+    [];
+
+  controls.enabled =
+    true;
+
+  renderer.domElement.classList.remove(
+    "drawing"
+  );
+
+  disposeObject(
+    drawingPreviewLine
+  );
+
+  drawingPreviewLine =
+    null;
+
+  updateSourceVisuals();
+
+  setStatus(
+    "DRAWING CANCELLED"
+  );
+}
+
+function finishDrawingReleaseShape() {
+  if (
+    !drawingReleaseShape
+  ) {
+    return;
+  }
+
+  let points =
+    drawingPoints.slice();
+
+  if (
+    points.length >= 2
+  ) {
+    const first =
+      points[0];
+
+    const last =
+      points[
+        points.length - 1
+      ];
+
+    const distance =
+      Math.hypot(
+        first.x - last.x,
+        first.z - last.z
+      );
+
+    if (
+      distance < 0.5
+    ) {
+      points =
+        points.slice(
+          0,
+          -1
+        );
+    }
+  }
+
+  if (
+    points.length < 3
+  ) {
+    setStatus(
+      "ADD AT LEAST 3 POINTS"
+    );
+
+    return;
+  }
+
+  if (
+    polygonSelfIntersects(
+      points
+    )
+  ) {
+    setStatus(
+      "SHAPE LINES MAY NOT CROSS"
+    );
+
+    return;
+  }
+
+  const area =
+    polygonArea(
+      points
+    );
+
+  if (
+    area < 1
+  ) {
+    setStatus(
+      "CUSTOM SHAPE IS TOO SMALL"
+    );
+
+    return;
+  }
+
+  const centroid =
+    polygonCentroid(
+      points
+    );
+
+  releasePolygonLocal =
+    points.map(
+      (point) => {
+        return {
+          x:
+            point.x -
+            centroid.x,
+
+          z:
+            point.z -
+            centroid.z
+        };
+      }
+    );
+
+  params.releaseShapeMode =
+    "polygon";
+
+  releaseShapeModeInput.value =
+    "polygon";
 
   sourceLocation.x =
-    clamp(
-      sourceLocation.x,
-      -terrainWidth * 0.5 +
-        halfSide,
-      terrainWidth * 0.5 -
-        halfSide
-    );
+    centroid.x;
 
   sourceLocation.z =
-    clamp(
-      sourceLocation.z,
-      -terrainDepth * 0.5 +
-        halfSide,
-      terrainDepth * 0.5 -
-        halfSide
-    );
+    centroid.z;
 
-  const groundY =
-    terrainHeight(
-      sourceLocation.x,
-      sourceLocation.z
-    );
+  drawingReleaseShape =
+    false;
 
-  sourceLocation.y =
-    groundY +
-    SURFACE_CLEARANCE;
+  drawingPoints =
+    [];
 
-  if (sourceMarker) {
-    sourceMarker.position.copy(
-      sourceLocation
-    );
+  controls.enabled =
+    true;
 
-    sourceMarker.scale.setScalar(
-      side * 0.5
-    );
+  renderer.domElement.classList.remove(
+    "drawing"
+  );
 
-    sourceMarker.visible =
-      !simulationStarted;
-  }
+  disposeObject(
+    drawingPreviewLine
+  );
 
-  if (sourceVolumePreview) {
-    const height =
-      getSourceHeight();
+  drawingPreviewLine =
+    null;
 
-    sourceVolumePreview.position.set(
-      sourceLocation.x,
-      groundY +
-        height * 0.5,
-      sourceLocation.z
-    );
+  createParticles();
+  updateSourceVisuals();
 
-    sourceVolumePreview.scale.set(
-      side,
-      height,
-      side
-    );
+  drawShapeHint.textContent =
+    "Custom polygon active. Draw again to replace it.";
 
-    sourceVolumePreview.visible =
-      !simulationStarted;
-  }
+  setStatus(
+    `CUSTOM AREA ${formatNumber(
+      area
+    )} m²`
+  );
+}
+
+function clearCustomReleaseShape() {
+  releasePolygonLocal =
+    null;
+
+  params.releaseShapeMode =
+    "rectangle";
+
+  releaseShapeModeInput.value =
+    "rectangle";
+
+  cancelDrawingReleaseShape();
+
+  createParticles();
+  updateSourceVisuals();
+
+  setStatus(
+    "CUSTOM SHAPE CLEARED"
+  );
 }
 
 
@@ -1350,7 +2457,9 @@ function getParticleCount() {
 }
 
 function updateParticleCountStatus() {
-  if (!particleCountStatus) {
+  if (
+    !particleCountStatus
+  ) {
     return;
   }
 
@@ -1360,12 +2469,21 @@ function updateParticleCountStatus() {
   const simulated =
     getParticleCount();
 
-  if (requested === simulated) {
+  if (
+    requested ===
+    simulated
+  ) {
     particleCountStatus.textContent =
-      `${formatNumber(requested)} PARTICLES`;
+      `${formatNumber(
+        requested
+      )} PARTICLES`;
   } else {
     particleCountStatus.textContent =
-      `${formatNumber(simulated)} / ${formatNumber(requested)} PARTICLES`;
+      `${formatNumber(
+        simulated
+      )} / ${formatNumber(
+        requested
+      )} PARTICLES`;
   }
 }
 
@@ -1373,8 +2491,23 @@ function getParticleRadius() {
   return Math.cbrt(
     parcelVolume *
     3 /
-    (4 * Math.PI)
+    (
+      4 *
+      Math.PI
+    )
   );
+}
+
+function getParticleContactRadius() {
+  if (
+    params.particleVisualization ===
+    "points"
+  ) {
+    return parcelRadius *
+      params.particleSize;
+  }
+
+  return parcelRadius;
 }
 
 
@@ -1415,7 +2548,10 @@ function getLaunchDirection(
   let directionZ =
     1;
 
-  if (mode === "downhill") {
+  if (
+    mode ===
+    "downhill"
+  ) {
     const gradient =
       terrainGradient(
         x,
@@ -1429,20 +2565,30 @@ function getLaunchDirection(
       -gradient.dz;
   }
 
-  if (mode === "fixed") {
+  if (
+    mode ===
+    "fixed"
+  ) {
     const angle =
       THREE.MathUtils.degToRad(
         params.directionAngle
       );
 
     directionX =
-      Math.sin(angle);
+      Math.sin(
+        angle
+      );
 
     directionZ =
-      Math.cos(angle);
+      Math.cos(
+        angle
+      );
   }
 
-  if (mode === "radial") {
+  if (
+    mode ===
+    "radial"
+  ) {
     directionX =
       x -
       sourceLocation.x;
@@ -1457,21 +2603,18 @@ function getLaunchDirection(
         directionZ
       ) < 0.0001
     ) {
-      const gradient =
-        terrainGradient(
-          x,
-          z
-        );
-
       directionX =
-        -gradient.dx;
+        0;
 
       directionZ =
-        -gradient.dz;
+        1;
     }
   }
 
-  if (mode === "vector") {
+  if (
+    mode ===
+    "vector"
+  ) {
     directionX =
       params.directionX;
 
@@ -1485,7 +2628,9 @@ function getLaunchDirection(
       directionZ
     );
 
-  if (length < 0.0001) {
+  if (
+    length < 0.0001
+  ) {
     return {
       x: 0,
       z: 1
@@ -1551,32 +2696,238 @@ function terrainGradient(
 
   return {
     dx:
-      (right - left) /
-      (2 * distance),
+      (
+        right -
+        left
+      ) /
+      (
+        2 *
+        distance
+      ),
 
     dz:
-      (front - back) /
-      (2 * distance)
+      (
+        front -
+        back
+      ) /
+      (
+        2 *
+        distance
+      )
   };
 }
 
 
 /* =====================================================
-   SOURCE STACK
+   SOURCE PARTICLE POSITIONS
 ===================================================== */
 
+function generateInteriorPoints(
+  polygon,
+  count
+) {
+  const bounds =
+    polygonBounds(
+      polygon
+    );
+
+  const width =
+    Math.max(
+      bounds.maxX -
+        bounds.minX,
+      0.001
+    );
+
+  const depth =
+    Math.max(
+      bounds.maxZ -
+        bounds.minZ,
+      0.001
+    );
+
+  const aspect =
+    width /
+    depth;
+
+  const nx =
+    Math.max(
+      1,
+      Math.ceil(
+        Math.sqrt(
+          count *
+          aspect
+        )
+      )
+    );
+
+  const nz =
+    Math.max(
+      1,
+      Math.ceil(
+        count /
+        nx
+      )
+    );
+
+  const points =
+    [];
+
+  for (
+    let iz = 0;
+    iz < nz;
+    iz++
+  ) {
+    for (
+      let ix = 0;
+      ix < nx;
+      ix++
+    ) {
+      const point = {
+        x:
+          bounds.minX +
+          (
+            ix +
+            0.5
+          ) /
+          nx *
+          width,
+
+        z:
+          bounds.minZ +
+          (
+            iz +
+            0.5
+          ) /
+          nz *
+          depth
+      };
+
+      if (
+        pointInPolygon(
+          point,
+          polygon
+        )
+      ) {
+        points.push(
+          point
+        );
+      }
+    }
+  }
+
+  if (
+    points.length >
+    count
+  ) {
+    const stride =
+      points.length /
+      count;
+
+    return Array.from(
+      {
+        length: count
+      },
+      (_, index) => {
+        return points[
+          Math.floor(
+            index *
+            stride
+          )
+        ];
+      }
+    );
+  }
+
+  let attempts =
+    0;
+
+  const maxAttempts =
+    count *
+    50;
+
+  while (
+    points.length <
+      count &&
+    attempts <
+      maxAttempts
+  ) {
+    attempts++;
+
+    const point = {
+      x:
+        bounds.minX +
+        Math.random() *
+        width,
+
+      z:
+        bounds.minZ +
+        Math.random() *
+        depth
+    };
+
+    if (
+      pointInPolygon(
+        point,
+        polygon
+      )
+    ) {
+      points.push(
+        point
+      );
+    }
+  }
+
+  if (
+    points.length ===
+    0
+  ) {
+    points.push({
+      x: 0,
+      z: 0
+    });
+  }
+
+  while (
+    points.length <
+    count
+  ) {
+    points.push(
+      points[
+        points.length %
+        points.length
+      ]
+    );
+  }
+
+  return points.slice(
+    0,
+    count
+  );
+}
+
 function createSourceLayout() {
-  const side =
-    getReleaseSideLength();
+  const polygon =
+    getReleasePolygonLocal();
+
+  const activePolygon =
+    polygon ||
+    getRectanglePolygonLocal();
+
+  const sourceArea =
+    Math.max(
+      getReleaseArea(),
+      1
+    );
+
+  const sourceHeight =
+    params.sourceVolume /
+    sourceArea;
 
   const diameter =
     parcelRadius *
     2;
 
-  const sourceHeight =
-    getSourceHeight();
-
-  const estimatedLayers =
+  const layers =
     Math.max(
       1,
       Math.ceil(
@@ -1588,65 +2939,33 @@ function createSourceLayout() {
       )
     );
 
-  const slotsPerLayer =
+  const pointsPerLayer =
     Math.max(
       1,
       Math.ceil(
         particleCount /
-        estimatedLayers
+        layers
       )
     );
 
-  const columns =
-    Math.max(
-      1,
-      Math.ceil(
-        Math.sqrt(
-          slotsPerLayer
-        )
-      )
+  const positions =
+    generateInteriorPoints(
+      activePolygon,
+      pointsPerLayer
     );
-
-  const rows =
-    Math.max(
-      1,
-      Math.ceil(
-        slotsPerLayer /
-        columns
-      )
-    );
-
-  const layers =
-    Math.max(
-      1,
-      Math.ceil(
-        particleCount /
-        (columns * rows)
-      )
-    );
-
-  const spacingX =
-    side /
-    columns;
-
-  const spacingZ =
-    side /
-    rows;
 
   const verticalSpacing =
     Math.max(
-      diameter,
+      diameter *
+      1.02,
       sourceHeight /
       layers
     );
 
   return {
-    side,
-    columns,
-    rows,
     layers,
-    spacingX,
-    spacingZ,
+    positions,
+    pointsPerLayer,
     verticalSpacing
   };
 }
@@ -1654,53 +2973,34 @@ function createSourceLayout() {
 function placeParticleAtSource(
   particle
 ) {
-  if (!sourceLayout) {
+  if (
+    !sourceLayout
+  ) {
     return;
   }
-
-  const {
-    columns,
-    rows,
-    spacingX,
-    spacingZ,
-    verticalSpacing
-  } = sourceLayout;
-
-  const layerSize =
-    columns *
-    rows;
 
   const layer =
     Math.floor(
       particle.sourceIndex /
-      layerSize
+      sourceLayout.pointsPerLayer
     );
 
   const slot =
     particle.sourceIndex %
-    layerSize;
+    sourceLayout.pointsPerLayer;
 
-  const gridX =
-    slot %
-    columns;
-
-  const gridZ =
-    Math.floor(
-      slot /
-      columns
-    );
+  const localPosition =
+    sourceLayout.positions[
+      slot
+    ];
 
   const x =
-    sourceLocation.x -
-    sourceLayout.side * 0.5 +
-    spacingX * 0.5 +
-    gridX * spacingX;
+    sourceLocation.x +
+    localPosition.x;
 
   const z =
-    sourceLocation.z -
-    sourceLayout.side * 0.5 +
-    spacingZ * 0.5 +
-    gridZ * spacingZ;
+    sourceLocation.z +
+    localPosition.z;
 
   const groundY =
     terrainHeight(
@@ -1708,14 +3008,17 @@ function placeParticleAtSource(
       z
     );
 
+  const contactRadius =
+    getParticleContactRadius();
+
   particle.x =
     x;
 
   particle.y =
     groundY +
-    parcelRadius +
+    contactRadius +
     layer *
-    verticalSpacing;
+    sourceLayout.verticalSpacing;
 
   particle.z =
     z;
@@ -1805,7 +3108,7 @@ function resetParticle(
 
 
 /* =====================================================
-   PARTICLE METRICS AND COLOR
+   PARTICLE METRICS AND COLORS
 ===================================================== */
 
 function updateParticleMetrics() {
@@ -1858,20 +3161,20 @@ function updateParticleMetrics() {
         particle.age
       );
 
-    const x =
+    const cellX =
       Math.floor(
         particle.x /
         cellSize
       );
 
-    const z =
+    const cellZ =
       Math.floor(
         particle.z /
         cellSize
       );
 
     const key =
-      `${x}:${z}`;
+      `${cellX}:${cellZ}`;
 
     thicknessCells.set(
       key,
@@ -1971,18 +3274,16 @@ function updateParticleMetrics() {
       metrics
     );
   }
-
-  return metrics;
 }
 
 function updateParticleColor(
   particle,
   metrics
 ) {
-  const mode =
-    params.colorMode;
-
-  if (mode === "material") {
+  if (
+    params.colorMode ===
+    "material"
+  ) {
     particle.color.setHex(
       0x9bd7d0
     );
@@ -1993,25 +3294,37 @@ function updateParticleColor(
   let value =
     0;
 
-  if (mode === "velocity") {
+  if (
+    params.colorMode ===
+    "velocity"
+  ) {
     value =
       particle.speed /
       metrics.maxSpeed;
   }
 
-  if (mode === "distance") {
+  if (
+    params.colorMode ===
+    "distance"
+  ) {
     value =
       particle.distanceTraveled /
       metrics.maxDistance;
   }
 
-  if (mode === "thickness") {
+  if (
+    params.colorMode ===
+    "thickness"
+  ) {
     value =
       particle.thickness /
       metrics.maxThickness;
   }
 
-  if (mode === "age") {
+  if (
+    params.colorMode ===
+    "age"
+  ) {
     value =
       particle.age /
       Math.max(
@@ -2027,13 +3340,10 @@ function updateParticleColor(
       1
     );
 
-  /*
-    Blue/cyan represents low values.
-    Red represents high values.
-  */
   particle.color.setHSL(
     0.66 -
-      value * 0.66,
+      value *
+      0.66,
     0.86,
     0.54
   );
@@ -2064,9 +3374,12 @@ function getProjectionScale() {
 }
 
 function createPointParticles() {
+  updateParticleMetrics();
+
   const positions =
     new Float32Array(
-      particleCount * 3
+      particleCount *
+      3
     );
 
   const radii =
@@ -2076,10 +3389,9 @@ function createPointParticles() {
 
   const colors =
     new Float32Array(
-      particleCount * 3
+      particleCount *
+      3
     );
-
-  updateParticleMetrics();
 
   for (
     let i = 0;
@@ -2323,7 +3635,7 @@ function updatePointMaterial() {
 
 
 /* =====================================================
-   SPATIAL GRID
+   PARTICLE GRID
 ===================================================== */
 
 function buildParticleGrid(
@@ -2422,9 +3734,6 @@ function applyCohesionForces(
       interactionDistance
     );
 
-  const minimumDistance =
-    diameter;
-
   for (
     let i = 0;
     i < particles.length;
@@ -2452,26 +3761,26 @@ function applyCohesionForces(
       );
 
     for (
-      let offsetX = -1;
-      offsetX <= 1;
-      offsetX++
+      let ox = -1;
+      ox <= 1;
+      ox++
     ) {
       for (
-        let offsetY = -1;
-        offsetY <= 1;
-        offsetY++
+        let oy = -1;
+        oy <= 1;
+        oy++
       ) {
         for (
-          let offsetZ = -1;
-          offsetZ <= 1;
-          offsetZ++
+          let oz = -1;
+          oz <= 1;
+          oz++
         ) {
           const bucket =
             grid.get(
               cellKey(
-                cellX + offsetX,
-                cellY + offsetY,
-                cellZ + offsetZ
+                cellX + ox,
+                cellY + oy,
+                cellZ + oz
               )
             );
 
@@ -2482,7 +3791,9 @@ function applyCohesionForces(
           for (
             const j of bucket
           ) {
-            if (j <= i) {
+            if (
+              j <= i
+            ) {
               continue;
             }
 
@@ -2507,7 +3818,7 @@ function applyCohesionForces(
 
             if (
               distance <=
-              minimumDistance ||
+              diameter ||
               distance >=
               interactionDistance
             ) {
@@ -2533,7 +3844,7 @@ function applyCohesionForces(
               ) /
               (
                 interactionDistance -
-                minimumDistance
+                diameter
               );
 
             const force =
@@ -2566,45 +3877,6 @@ function applyCohesionForces(
             b.vz -=
               nz *
               force;
-
-            const alignment =
-              cohesion *
-              falloff *
-              deltaTime *
-              0.12;
-
-            const relativeVx =
-              b.vx - a.vx;
-
-            const relativeVy =
-              b.vy - a.vy;
-
-            const relativeVz =
-              b.vz - a.vz;
-
-            a.vx +=
-              relativeVx *
-              alignment;
-
-            a.vy +=
-              relativeVy *
-              alignment;
-
-            a.vz +=
-              relativeVz *
-              alignment;
-
-            b.vx -=
-              relativeVx *
-              alignment;
-
-            b.vy -=
-              relativeVy *
-              alignment;
-
-            b.vz -=
-              relativeVz *
-              alignment;
           }
         }
       }
@@ -2626,7 +3898,7 @@ function applyTerrainContact(
       particle.x,
       particle.z
     ) +
-    parcelRadius +
+    getParticleContactRadius() +
     SURFACE_CLEARANCE;
 
   if (
@@ -2728,26 +4000,26 @@ function resolveParticleCollisions() {
       );
 
     for (
-      let offsetX = -1;
-      offsetX <= 1;
-      offsetX++
+      let ox = -1;
+      ox <= 1;
+      ox++
     ) {
       for (
-        let offsetY = -1;
-        offsetY <= 1;
-        offsetY++
+        let oy = -1;
+        oy <= 1;
+        oy++
       ) {
         for (
-          let offsetZ = -1;
-          offsetZ <= 1;
-          offsetZ++
+          let oz = -1;
+          oz <= 1;
+          oz++
         ) {
           const bucket =
             grid.get(
               cellKey(
-                cellX + offsetX,
-                cellY + offsetY,
-                cellZ + offsetZ
+                cellX + ox,
+                cellY + oy,
+                cellZ + oz
               )
             );
 
@@ -2793,10 +4065,17 @@ function resolveParticleCollisions() {
             if (
               distance < 0.000001
             ) {
-              dx = 1;
-              dy = 0;
-              dz = 0;
-              distance = 1;
+              dx =
+                1;
+
+              dy =
+                0;
+
+              dz =
+                0;
+
+              distance =
+                1;
             }
 
             const nx =
@@ -2852,59 +4131,59 @@ function resolveParticleCollisions() {
             const relativeVz =
               b.vz - a.vz;
 
-            const relativeNormalVelocity =
+            const normalVelocity =
               relativeVx * nx +
               relativeVy * ny +
               relativeVz * nz;
 
             if (
-              relativeNormalVelocity < 0
+              normalVelocity < 0
             ) {
-              const normalImpulse =
+              const impulse =
                 -(
                   1 +
                   COLLISION_RESTITUTION
                 ) *
-                relativeNormalVelocity *
+                normalVelocity *
                 0.5;
 
               a.vx -=
                 nx *
-                normalImpulse;
+                impulse;
 
               a.vy -=
                 ny *
-                normalImpulse;
+                impulse;
 
               a.vz -=
                 nz *
-                normalImpulse;
+                impulse;
 
               b.vx +=
                 nx *
-                normalImpulse;
+                impulse;
 
               b.vy +=
                 ny *
-                normalImpulse;
+                impulse;
 
               b.vz +=
                 nz *
-                normalImpulse;
+                impulse;
 
               const tangentVx =
                 relativeVx -
-                relativeNormalVelocity *
+                normalVelocity *
                 nx;
 
               const tangentVy =
                 relativeVy -
-                relativeNormalVelocity *
+                normalVelocity *
                 ny;
 
               const tangentVz =
                 relativeVz -
-                relativeNormalVelocity *
+                normalVelocity *
                 nz;
 
               const tangentLength =
@@ -2918,10 +4197,10 @@ function resolveParticleCollisions() {
                 tangentLength >
                 0.000001
               ) {
-                const frictionImpulse =
+                const tangentImpulse =
                   Math.min(
                     tangentLength,
-                    normalImpulse *
+                    impulse *
                     params.materialFriction
                   );
 
@@ -2939,32 +4218,32 @@ function resolveParticleCollisions() {
 
                 a.vx +=
                   tx *
-                  frictionImpulse *
+                  tangentImpulse *
                   0.5;
 
                 a.vy +=
                   ty *
-                  frictionImpulse *
+                  tangentImpulse *
                   0.5;
 
                 a.vz +=
                   tz *
-                  frictionImpulse *
+                  tangentImpulse *
                   0.5;
 
                 b.vx -=
                   tx *
-                  frictionImpulse *
+                  tangentImpulse *
                   0.5;
 
                 b.vy -=
                   ty *
-                  frictionImpulse *
+                  tangentImpulse *
                   0.5;
 
                 b.vz -=
                   tz *
-                  frictionImpulse *
+                  tangentImpulse *
                   0.5;
               }
             }
@@ -2977,7 +4256,7 @@ function resolveParticleCollisions() {
 
 
 /* =====================================================
-   PHYSICS STEP
+   PHYSICS
 ===================================================== */
 
 function updatePhysics(
@@ -2986,7 +4265,7 @@ function updatePhysics(
   const downhillForce =
     2;
 
-  const horizontalFriction =
+  const frictionFactor =
     Math.max(
       0,
       1 -
@@ -3021,44 +4300,35 @@ function updatePhysics(
         particle.z
       );
 
-    if (
+    const downhillFactor =
       params.startDirectionMode ===
       "downhill"
-    ) {
-      particle.vx +=
-        -gradient.dx *
-        downhillForce *
-        deltaTime;
+        ? 1
+        : 0.35;
 
-      particle.vz +=
-        -gradient.dz *
-        downhillForce *
-        deltaTime;
-    } else {
-      particle.vx +=
-        -gradient.dx *
-        downhillForce *
-        0.35 *
-        deltaTime;
+    particle.vx +=
+      -gradient.dx *
+      downhillForce *
+      downhillFactor *
+      deltaTime;
 
-      particle.vz +=
-        -gradient.dz *
-        downhillForce *
-        0.35 *
-        deltaTime;
-    }
+    particle.vz +=
+      -gradient.dz *
+      downhillForce *
+      downhillFactor *
+      deltaTime;
 
     particle.vy -=
       GRAVITY *
       deltaTime;
 
     particle.vx *=
-      horizontalFriction;
+      frictionFactor;
 
     particle.vz *=
-      horizontalFriction;
+      frictionFactor;
 
-    let horizontalSpeed =
+    const horizontalSpeed =
       Math.hypot(
         particle.vx,
         particle.vz
@@ -3131,7 +4401,7 @@ function updatePhysics(
         particle.z - oldZ
       );
 
-    horizontalSpeed =
+    const speed =
       Math.hypot(
         particle.vx,
         particle.vz
@@ -3140,7 +4410,7 @@ function updatePhysics(
     particle.deposited =
       particle.launchAge >=
       params.launchDuration &&
-      horizontalSpeed <
+      speed <
       settlingThreshold;
   }
 
@@ -3223,10 +4493,6 @@ function simulateFrame(
     substeps++;
   }
 
-  /*
-    Avoid a spiral of death when the user
-    selects a high speed on a slow device.
-  */
   if (
     substeps >=
     MAX_PHYSICS_SUBSTEPS
@@ -3238,20 +4504,24 @@ function simulateFrame(
 
 
 /* =====================================================
-   SOUP COMPONENTS
+   SOUP
 ===================================================== */
 
 function clearSoupRenderers() {
   for (
     const rendererObject of soupRenderers
   ) {
-    if (rendererObject.parent) {
+    if (
+      rendererObject.parent
+    ) {
       rendererObject.parent.remove(
         rendererObject
       );
     }
 
-    if (rendererObject.geometry) {
+    if (
+      rendererObject.geometry
+    ) {
       rendererObject.geometry.dispose();
     }
   }
@@ -3259,8 +4529,11 @@ function clearSoupRenderers() {
   soupRenderers =
     [];
 
-  if (soupMaterial) {
+  if (
+    soupMaterial
+  ) {
     soupMaterial.dispose();
+
     soupMaterial =
       null;
   }
@@ -3272,12 +4545,11 @@ function getSoupLinkDistance() {
     params.soupLinkRange;
 }
 
-function buildSoupComponents() {
+function buildParticleComponents() {
   const linkDistance =
     Math.max(
       getSoupLinkDistance(),
-      parcelRadius *
-      0.5
+      parcelRadius
     );
 
   const linkDistanceSquared =
@@ -3349,30 +4621,32 @@ function buildSoupComponents() {
         );
 
       for (
-        let offsetX = -1;
-        offsetX <= 1;
-        offsetX++
+        let ox = -1;
+        ox <= 1;
+        ox++
       ) {
         for (
-          let offsetY = -1;
-          offsetY <= 1;
-          offsetY++
+          let oy = -1;
+          oy <= 1;
+          oy++
         ) {
           for (
-            let offsetZ = -1;
-            offsetZ <= 1;
-            offsetZ++
+            let oz = -1;
+            oz <= 1;
+            oz++
           ) {
             const bucket =
               grid.get(
                 cellKey(
-                  cellX + offsetX,
-                  cellY + offsetY,
-                  cellZ + offsetZ
+                  cellX + ox,
+                  cellY + oy,
+                  cellZ + oz
                 )
               );
 
-            if (!bucket) {
+            if (
+              !bucket
+            ) {
               continue;
             }
 
@@ -3380,7 +4654,9 @@ function buildSoupComponents() {
               const candidateIndex of bucket
             ) {
               if (
-                visited[candidateIndex]
+                visited[
+                  candidateIndex
+                ]
               ) {
                 continue;
               }
@@ -3411,7 +4687,9 @@ function buildSoupComponents() {
                 distanceSquared <=
                 linkDistanceSquared
               ) {
-                visited[candidateIndex] =
+                visited[
+                  candidateIndex
+                ] =
                   1;
 
                 stack.push(
@@ -3437,32 +4715,22 @@ function buildSoupComponents() {
   );
 
   return {
-    components:
-      components.slice(
-        0,
-        MAX_SOUP_FIELDS
-      ),
-
+    components,
     linkDistance
   };
 }
 
-function componentBounds(
+function getComponentBounds(
   component
 ) {
-  const min =
-    new THREE.Vector3(
-      Infinity,
-      Infinity,
-      Infinity
-    );
-
-  const max =
-    new THREE.Vector3(
-      -Infinity,
-      -Infinity,
-      -Infinity
-    );
+  const bounds = {
+    minX: Infinity,
+    maxX: -Infinity,
+    minY: Infinity,
+    maxY: -Infinity,
+    minZ: Infinity,
+    maxZ: -Infinity
+  };
 
   for (
     const index of component
@@ -3470,59 +4738,195 @@ function componentBounds(
     const particle =
       particles[index];
 
-    min.x =
+    bounds.minX =
       Math.min(
-        min.x,
+        bounds.minX,
         particle.x
       );
 
-    min.y =
+    bounds.maxX =
+      Math.max(
+        bounds.maxX,
+        particle.x
+      );
+
+    bounds.minY =
       Math.min(
-        min.y,
+        bounds.minY,
         particle.y
       );
 
-    min.z =
+    bounds.maxY =
+      Math.max(
+        bounds.maxY,
+        particle.y
+      );
+
+    bounds.minZ =
       Math.min(
-        min.z,
+        bounds.minZ,
         particle.z
       );
 
-    max.x =
+    bounds.maxZ =
       Math.max(
-        max.x,
-        particle.x
-      );
-
-    max.y =
-      Math.max(
-        max.y,
-        particle.y
-      );
-
-    max.z =
-      Math.max(
-        max.z,
+        bounds.maxZ,
         particle.z
       );
   }
 
+  return bounds;
+}
+
+function splitComponentForSoup(
+  component,
+  linkDistance
+) {
+  const bounds =
+    getComponentBounds(
+      component
+    );
+
+  const maxFieldSize =
+    Math.max(
+      linkDistance * 12,
+      8
+    );
+
+  const largestDimension =
+    Math.max(
+      bounds.maxX -
+        bounds.minX,
+
+      bounds.maxY -
+        bounds.minY,
+
+      bounds.maxZ -
+        bounds.minZ
+    );
+
+  if (
+    largestDimension <=
+    maxFieldSize
+  ) {
+    return [
+      component
+    ];
+  }
+
+  const cellSize =
+    maxFieldSize *
+    0.7;
+
+  const buckets =
+    new Map();
+
+  for (
+    const index of component
+  ) {
+    const particle =
+      particles[index];
+
+    const x =
+      Math.floor(
+        particle.x /
+        cellSize
+      );
+
+    const y =
+      Math.floor(
+        particle.y /
+        cellSize
+      );
+
+    const z =
+      Math.floor(
+        particle.z /
+        cellSize
+      );
+
+    const key =
+      cellKey(
+        x,
+        y,
+        z
+      );
+
+    let bucket =
+      buckets.get(
+        key
+      );
+
+    if (
+      !bucket
+    ) {
+      bucket =
+        [];
+
+      buckets.set(
+        key,
+        bucket
+      );
+    }
+
+    bucket.push(
+      index
+    );
+  }
+
+  return Array.from(
+    buckets.values()
+  );
+}
+
+function buildSoupRenderGroups() {
+  const componentData =
+    buildParticleComponents();
+
+  const groups =
+    [];
+
+  for (
+    const component of
+      componentData.components
+  ) {
+    const split =
+      splitComponentForSoup(
+        component,
+        componentData.linkDistance
+      );
+
+    groups.push(
+      ...split
+    );
+  }
+
+  groups.sort(
+    (a, b) => {
+      return b.length -
+        a.length;
+    }
+  );
+
   return {
-    min,
-    max
+    groups: groups.slice(
+      0,
+      MAX_SOUP_FIELDS
+    ),
+
+    linkDistance:
+      componentData.linkDistance
   };
 }
 
-function componentBalls(
-  component,
-  bounds,
-  linkDistance
+function getGroupBalls(
+  group
 ) {
   if (
-    component.length <=
+    group.length <=
     MAX_SOUP_BALLS_PER_FIELD
   ) {
-    return component.map(
+    return group.map(
       (index) => {
         return {
           x:
@@ -3542,14 +4946,13 @@ function componentBalls(
   }
 
   const cellSize =
-    linkDistance *
-    0.75;
+    getSoupLinkDistance();
 
   const bins =
     new Map();
 
   for (
-    const index of component
+    const index of group
   ) {
     const particle =
       particles[index];
@@ -3584,7 +4987,9 @@ function componentBalls(
         key
       );
 
-    if (!bin) {
+    if (
+      !bin
+    ) {
       bin = {
         x: 0,
         y: 0,
@@ -3622,70 +5027,48 @@ function componentBalls(
     bin.count++;
   }
 
-  const balls =
-    [];
+  return Array.from(
+    bins.values()
+  ).map(
+    (bin) => {
+      return {
+        x:
+          bin.x /
+          bin.count,
 
-  for (
-    const bin of bins.values()
-  ) {
-    balls.push({
-      x:
-        bin.x /
-        bin.count,
+        y:
+          bin.y /
+          bin.count,
 
-      y:
-        bin.y /
-        bin.count,
+        z:
+          bin.z /
+          bin.count,
 
-      z:
-        bin.z /
-        bin.count,
+        color:
+          new THREE.Color(
+            bin.r /
+              bin.count,
 
-      color:
-        new THREE.Color(
-          bin.r /
-            bin.count,
+            bin.g /
+              bin.count,
 
-          bin.g /
-            bin.count,
-
-          bin.b /
-            bin.count
-        )
-    });
-  }
-
-  if (
-    balls.length <=
-    MAX_SOUP_BALLS_PER_FIELD
-  ) {
-    return balls;
-  }
-
-  const stride =
-    Math.ceil(
-      balls.length /
-      MAX_SOUP_BALLS_PER_FIELD
-    );
-
-  return balls.filter(
-    (_, index) => {
-      return index %
-        stride ===
-        0;
+            bin.b /
+              bin.count
+          )
+      };
     }
+  ).slice(
+    0,
+    MAX_SOUP_BALLS_PER_FIELD
   );
 }
-
-
-/* =====================================================
-   SOUP RENDERING
-===================================================== */
 
 function ensureSoupRenderers(
   count
 ) {
-  if (!soupMaterial) {
+  if (
+    !soupMaterial
+  ) {
     soupMaterial =
       new THREE.MeshStandardMaterial({
         color: 0xffffff,
@@ -3700,7 +5083,7 @@ function ensureSoupRenderers(
     soupRenderers.length <
     count
   ) {
-    const rendererObject =
+    const soup =
       new MarchingCubes(
         SOUP_RESOLUTION,
         soupMaterial,
@@ -3709,30 +5092,30 @@ function ensureSoupRenderers(
         SOUP_MAX_POLYGONS
       );
 
-    rendererObject.enableUvs =
+    soup.enableUvs =
       false;
 
-    rendererObject.enableColors =
+    soup.enableColors =
       true;
 
-    rendererObject.isolation =
+    soup.isolation =
       80;
 
-    rendererObject.frustumCulled =
+    soup.frustumCulled =
       false;
 
-    rendererObject.renderOrder =
+    soup.renderOrder =
       25;
 
-    rendererObject.visible =
+    soup.visible =
       false;
 
     soupRenderers.push(
-      rendererObject
+      soup
     );
 
     scene.add(
-      rendererObject
+      soup
     );
   }
 
@@ -3740,17 +5123,21 @@ function ensureSoupRenderers(
     soupRenderers.length >
     count
   ) {
-    const rendererObject =
+    const soup =
       soupRenderers.pop();
 
-    if (rendererObject.parent) {
-      rendererObject.parent.remove(
-        rendererObject
+    if (
+      soup.parent
+    ) {
+      soup.parent.remove(
+        soup
       );
     }
 
-    if (rendererObject.geometry) {
-      rendererObject.geometry.dispose();
+    if (
+      soup.geometry
+    ) {
+      soup.geometry.dispose();
     }
   }
 }
@@ -3781,113 +5168,114 @@ function updateSoupRenderer(
   updateParticleMetrics();
 
   const soupData =
-    buildSoupComponents();
+    buildSoupRenderGroups();
 
   ensureSoupRenderers(
-    soupData.components.length
+    soupData.groups.length
   );
 
   const subtract =
     12;
 
   for (
-    let componentIndex = 0;
-    componentIndex <
-      soupData.components.length;
-    componentIndex++
+    let groupIndex = 0;
+    groupIndex <
+      soupData.groups.length;
+    groupIndex++
   ) {
-    const component =
-      soupData.components[
-        componentIndex
+    const group =
+      soupData.groups[
+        groupIndex
       ];
 
-    const rendererObject =
+    const soup =
       soupRenderers[
-        componentIndex
+        groupIndex
       ];
 
     const bounds =
-      componentBounds(
-        component
+      getComponentBounds(
+        group
       );
 
     const margin =
       Math.max(
         soupData.linkDistance *
-          0.7,
-
-        parcelRadius *
-          1.5,
-
+          0.75,
+        parcelRadius,
         0.5
       );
 
-    const sizeX =
-      bounds.max.x -
-      bounds.min.x;
-
-    const sizeY =
-      bounds.max.y -
-      bounds.min.y;
-
-    const sizeZ =
-      bounds.max.z -
-      bounds.min.z;
-
     const fieldSize =
       Math.max(
-        sizeX,
-        sizeY,
-        sizeZ,
-        soupData.linkDistance * 2
+        bounds.maxX -
+          bounds.minX,
+
+        bounds.maxY -
+          bounds.minY,
+
+        bounds.maxZ -
+          bounds.minZ,
+
+        soupData.linkDistance *
+          2
       ) +
-      margin * 2;
+      margin *
+      2;
 
     const center =
       new THREE.Vector3(
         (
-          bounds.min.x +
-          bounds.max.x
-        ) * 0.5,
+          bounds.minX +
+          bounds.maxX
+        ) *
+        0.5,
 
         (
-          bounds.min.y +
-          bounds.max.y
-        ) * 0.5,
+          bounds.minY +
+          bounds.maxY
+        ) *
+        0.5,
 
         (
-          bounds.min.z +
-          bounds.max.z
-        ) * 0.5
+          bounds.minZ +
+          bounds.maxZ
+        ) *
+        0.5
       );
 
     const minX =
       center.x -
-      fieldSize * 0.5;
+      fieldSize *
+      0.5;
 
     const minY =
       center.y -
-      fieldSize * 0.5;
+      fieldSize *
+      0.5;
 
     const minZ =
       center.z -
-      fieldSize * 0.5;
+      fieldSize *
+      0.5;
 
-    rendererObject.position.copy(
+    soup.position.copy(
       center
     );
 
-    rendererObject.scale.set(
+    soup.scale.set(
       fieldSize,
       fieldSize,
       fieldSize
     );
 
-    rendererObject.reset();
+    soup.reset();
 
     const desiredRadius =
       Math.max(
-        parcelRadius * 0.55,
+        parcelRadius *
+          0.55,
+
         soupData.linkDistance *
           0.5
       );
@@ -3898,23 +5286,21 @@ function updateSoupRenderer(
 
     const strength =
       (
-        rendererObject.isolation +
+        soup.isolation +
         subtract
       ) *
       normalizedRadius *
       normalizedRadius;
 
     const balls =
-      componentBalls(
-        component,
-        bounds,
-        soupData.linkDistance
+      getGroupBalls(
+        group
       );
 
     for (
       const ball of balls
     ) {
-      const groundY =
+      const terrainY =
         terrainHeight(
           ball.x,
           ball.z
@@ -3923,7 +5309,7 @@ function updateSoupRenderer(
       const centerY =
         Math.max(
           ball.y,
-          groundY +
+          terrainY +
             desiredRadius +
             SURFACE_CLEARANCE
         );
@@ -3961,7 +5347,7 @@ function updateSoupRenderer(
           0.999
         );
 
-      rendererObject.addBall(
+      soup.addBall(
         normalizedX,
         normalizedY,
         normalizedZ,
@@ -3971,13 +5357,15 @@ function updateSoupRenderer(
       );
     }
 
-    rendererObject.update();
-    rendererObject.visible =
+    soup.update();
+
+    soup.visible =
       true;
   }
 
   for (
-    let i = soupData.components.length;
+    let i =
+      soupData.groups.length;
     i < soupRenderers.length;
     i++
   ) {
@@ -3988,11 +5376,13 @@ function updateSoupRenderer(
 
 
 /* =====================================================
-   VISIBILITY
+   VISIBILITY AND PARTICLE CREATION
 ===================================================== */
 
 function updateParticleVisibility() {
-  if (particlePoints) {
+  if (
+    particlePoints
+  ) {
     particlePoints.visible =
       simulationStarted &&
       params.particleVisualization ===
@@ -4000,29 +5390,30 @@ function updateParticleVisibility() {
   }
 
   for (
-    const rendererObject of soupRenderers
+    const soup of soupRenderers
   ) {
-    rendererObject.visible =
+    soup.visible =
       simulationStarted &&
       params.particleVisualization ===
         "soup";
   }
 
-  if (sourceMarker) {
-    sourceMarker.visible =
-      !simulationStarted;
+  if (
+    releaseOutline
+  ) {
+    releaseOutline.visible =
+      !simulationStarted &&
+      !drawingReleaseShape;
   }
 
-  if (sourceVolumePreview) {
-    sourceVolumePreview.visible =
-      !simulationStarted;
+  if (
+    releaseVolumePreview
+  ) {
+    releaseVolumePreview.visible =
+      !simulationStarted &&
+      !drawingReleaseShape;
   }
 }
-
-
-/* =====================================================
-   PARTICLE CREATION
-===================================================== */
 
 function createParticles() {
   disposeObject(
@@ -4092,6 +5483,125 @@ function createParticles() {
     updateSoupRenderer(
       true
     );
+  }
+}
+
+
+/* =====================================================
+   SIMULATION STATE
+===================================================== */
+
+function canStartSimulation() {
+  if (
+    params.releaseShapeMode ===
+      "polygon" &&
+    !hasValidCustomPolygon()
+  ) {
+    setStatus(
+      "DRAW A CUSTOM RELEASE SHAPE FIRST"
+    );
+
+    return false;
+  }
+
+  if (
+    getReleaseArea() <=
+    0
+  ) {
+    setStatus(
+      "INVALID RELEASE AREA"
+    );
+
+    return false;
+  }
+
+  if (
+    !particles.length
+  ) {
+    setStatus(
+      "NO PARTICLES AVAILABLE"
+    );
+
+    return false;
+  }
+
+  return true;
+}
+
+function startSimulation() {
+  if (
+    !canStartSimulation()
+  ) {
+    return false;
+  }
+
+  simulationStarted =
+    true;
+
+  params.running =
+    true;
+
+  simulationAccumulator =
+    0;
+
+  soupUpdateAccumulator =
+    0;
+
+  playButton.textContent =
+    "PAUSE";
+
+  updateParticleVisibility();
+
+  if (
+    params.particleVisualization ===
+      "soup"
+  ) {
+    updateSoupRenderer(
+      true
+    );
+  }
+
+  setStatus(
+    "RUNNING"
+  );
+
+  return true;
+}
+
+function pauseSimulation() {
+  params.running =
+    false;
+
+  playButton.textContent =
+    "PLAY";
+
+  setStatus(
+    "PAUSED"
+  );
+}
+
+function stopSimulation(
+  resetVisualState = true
+) {
+  params.running =
+    false;
+
+  simulationStarted =
+    false;
+
+  simulationAccumulator =
+    0;
+
+  soupUpdateAccumulator =
+    0;
+
+  playButton.textContent =
+    "PLAY";
+
+  if (
+    resetVisualState
+  ) {
+    updateParticleVisibility();
   }
 }
 
@@ -4240,8 +5750,10 @@ function transformModelPoints(
     vector.set(
       point.x -
         center.x,
+
       point.y -
         center.y,
+
       point.z -
         center.z
     );
@@ -4281,7 +5793,9 @@ function fillRasterHoles(
     i < hasValue.length;
     i++
   ) {
-    if (hasValue[i]) {
+    if (
+      hasValue[i]
+    ) {
       queue[tail++] =
         i;
     }
@@ -4299,7 +5813,8 @@ function fillRasterHoles(
   ];
 
   while (
-    head < tail
+    head <
+    tail
   ) {
     const index =
       queue[head++];
@@ -4338,7 +5853,9 @@ function fillRasterHoles(
         resolution +
         nx;
 
-      if (hasValue[neighbour]) {
+      if (
+        hasValue[neighbour]
+      ) {
         continue;
       }
 
@@ -4525,14 +6042,9 @@ function createTerrainFromPoints(
   rawModelPoints =
     points;
 
-  params.running =
-    false;
-
-  simulationStarted =
-    false;
-
-  playButton.textContent =
-    "PLAY";
+  stopSimulation(
+    true
+  );
 
   createTerrain();
   createParticles();
@@ -4557,7 +6069,9 @@ function createTerrainFromPoints(
 }
 
 function frameCurrentTerrain() {
-  if (!terrainMesh) {
+  if (
+    !terrainMesh
+  ) {
     return;
   }
 
@@ -4592,20 +6106,24 @@ function frameCurrentTerrain() {
     maxSize /
     Math.tan(
       THREE.MathUtils.degToRad(
-        camera.fov * 0.5
+        camera.fov *
+        0.5
       )
     ) *
     1.2;
 
   camera.position.set(
     center.x +
-      distance * 0.85,
+      distance *
+      0.85,
 
     center.y +
-      distance * 0.65,
+      distance *
+      0.65,
 
     center.z +
-      distance * 0.85
+      distance *
+      0.85
   );
 
   controls.target.copy(
@@ -4618,7 +6136,9 @@ function frameCurrentTerrain() {
 function load3DTerrain(
   file
 ) {
-  if (!file) {
+  if (
+    !file
+  ) {
     return;
   }
 
@@ -4632,7 +6152,9 @@ function load3DTerrain(
       "ply",
       "stl",
       "obj"
-    ].includes(extension)
+    ].includes(
+      extension
+    )
   ) {
     setStatus(
       "USE PLY, STL OR OBJ"
@@ -4660,7 +6182,8 @@ function load3DTerrain(
   updateRotationUI();
 
   if (
-    extension === "obj"
+    extension ===
+    "obj"
   ) {
     const url =
       URL.createObjectURL(
@@ -4679,7 +6202,9 @@ function load3DTerrain(
               object
             );
 
-          if (!points.length) {
+          if (
+            !points.length
+          ) {
             setStatus(
               "OBJ HAS NO MESH GEOMETRY"
             );
@@ -4734,7 +6259,8 @@ function load3DTerrain(
           event.target.result;
 
         if (
-          extension === "ply"
+          extension ===
+          "ply"
         ) {
           geometry =
             new PLYLoader()
@@ -4754,7 +6280,9 @@ function load3DTerrain(
             geometry
           );
 
-        if (!points.length) {
+        if (
+          !points.length
+        ) {
           setStatus(
             `${extension.toUpperCase()} HAS NO GEOMETRY`
           );
@@ -4774,7 +6302,9 @@ function load3DTerrain(
           "MODEL PARSE ERROR"
         );
       } finally {
-        if (geometry) {
+        if (
+          geometry
+        ) {
           geometry.dispose();
         }
       }
@@ -4803,13 +6333,16 @@ function snapRotation(
   const number =
     Number(value);
 
-  if (!Number.isFinite(number)) {
+  if (
+    !Number.isFinite(number)
+  ) {
     return 0;
   }
 
   return THREE.MathUtils.clamp(
     Math.round(
-      number / 45
+      number /
+      45
     ) *
       45,
     -180,
@@ -4961,21 +6494,35 @@ function bindNumericSlider(
     value
   ) {
     const min =
-      Number(slider.min);
+      Number(
+        slider.min
+      );
 
     const max =
-      Number(slider.max);
+      Number(
+        slider.max
+      );
 
     const step =
-      Number(slider.step) ||
+      Number(
+        slider.step
+      ) ||
       1;
 
     let result =
-      Number(value);
+      Number(
+        value
+      );
 
-    if (!Number.isFinite(result)) {
+    if (
+      !Number.isFinite(
+        result
+      )
+    ) {
       result =
-        Number(slider.value);
+        Number(
+          slider.value
+        );
     }
 
     result =
@@ -4987,14 +6534,19 @@ function bindNumericSlider(
 
     result =
       Math.round(
-        (result - min) /
+        (
+          result -
+          min
+        ) /
         step
       ) *
       step +
       min;
 
     return Number(
-      result.toFixed(6)
+      result.toFixed(
+        6
+      )
     );
   }
 
@@ -5158,9 +6710,11 @@ startDirectionModeInput.addEventListener(
     updateDirectionControls();
 
     setStatus(
-      `DIRECTION ${startDirectionModeInput.options[
-        startDirectionModeInput.selectedIndex
-      ].text}`
+      `DIRECTION ${
+        startDirectionModeInput.options[
+          startDirectionModeInput.selectedIndex
+        ].text
+      }`
     );
   }
 );
@@ -5263,7 +6817,9 @@ bindNumericSlider(
     scheduleParticleRebuild();
 
     setStatus(
-      `SOURCE ${formatNumber(value)} m³`
+      `SOURCE ${formatNumber(
+        value
+      )} m³`
     );
   }
 );
@@ -5279,7 +6835,9 @@ bindNumericSlider(
     scheduleParticleRebuild();
 
     setStatus(
-      `RELEASE AREA ${formatNumber(value)} m²`
+      `RELEASE AREA ${formatNumber(
+        value
+      )} m²`
     );
   }
 );
@@ -5310,9 +6868,9 @@ bindNumericSlider(
       0;
 
     if (
+      simulationStarted &&
       params.particleVisualization ===
-        "soup" &&
-      simulationStarted
+        "soup"
     ) {
       updateSoupRenderer(
         true
@@ -5333,6 +6891,12 @@ bindNumericSlider(
       value;
 
     updatePointMaterial();
+
+    if (
+      !simulationStarted
+    ) {
+      createParticles();
+    }
 
     setStatus(
       `PARTICLE SCALE ${value}×`
@@ -5373,6 +6937,45 @@ bindNumericSlider(
   }
 );
 
+releaseShapeModeInput.addEventListener(
+  "change",
+  () => {
+    params.releaseShapeMode =
+      releaseShapeModeInput.value;
+
+    updateSourceVisuals();
+    createParticles();
+
+    if (
+      params.releaseShapeMode ===
+      "polygon" &&
+      !hasValidCustomPolygon()
+    ) {
+      setStatus(
+        "DRAW A CUSTOM RELEASE SHAPE"
+      );
+    } else {
+      setStatus(
+        "RELEASE SHAPE UPDATED"
+      );
+    }
+  }
+);
+
+drawReleaseShapeButton.addEventListener(
+  "click",
+  () => {
+    startDrawingReleaseShape();
+  }
+);
+
+clearReleaseShapeButton.addEventListener(
+  "click",
+  () => {
+    clearCustomReleaseShape();
+  }
+);
+
 colorModeInput.addEventListener(
   "change",
   () => {
@@ -5380,9 +6983,15 @@ colorModeInput.addEventListener(
       colorModeInput.value;
 
     if (
+      particlePoints
+    ) {
+      syncPointParticles();
+    }
+
+    if (
+      simulationStarted &&
       params.particleVisualization ===
-        "soup" &&
-      simulationStarted
+        "soup"
     ) {
       updateSoupRenderer(
         true
@@ -5390,9 +6999,11 @@ colorModeInput.addEventListener(
     }
 
     setStatus(
-      `COLOR BY ${colorModeInput.options[
-        colorModeInput.selectedIndex
-      ].text}`
+      `COLOR BY ${
+        colorModeInput.options[
+          colorModeInput.selectedIndex
+        ].text
+      }`
     );
   }
 );
@@ -5416,89 +7027,164 @@ particleVisualizationInput.addEventListener(
 
 
 /* =====================================================
-   SOURCE PLACEMENT
+   DRAWING POINTER EVENTS
 ===================================================== */
-
-const raycaster =
-  new THREE.Raycaster();
-
-const pointer =
-  new THREE.Vector2();
 
 renderer.domElement.addEventListener(
   "pointerdown",
   (event) => {
     if (
-      event.button !== 0 ||
-      !event.shiftKey ||
-      !terrainMesh
+      !drawingReleaseShape
+    ) {
+      if (
+        event.button === 0 &&
+        event.shiftKey &&
+        terrainMesh
+      ) {
+        const hit =
+          getTerrainIntersection(
+            event
+          );
+
+        if (
+          hit
+        ) {
+          sourceLocation.x =
+            hit.x;
+
+          sourceLocation.z =
+            hit.z;
+
+          stopSimulation(
+            true
+          );
+
+          createParticles();
+          updateSourceVisuals();
+
+          setStatus(
+            "SOURCE MOVED"
+          );
+        }
+      }
+
+      return;
+    }
+
+    event.preventDefault();
+
+    if (
+      event.button !== 0
     ) {
       return;
     }
 
-    const rect =
-      renderer.domElement
-        .getBoundingClientRect();
-
-    pointer.x =
-      (
-        (
-          event.clientX -
-          rect.left
-        ) /
-        rect.width
-      ) *
-      2 -
-      1;
-
-    pointer.y =
-      -(
-        (
-          event.clientY -
-          rect.top
-        ) /
-        rect.height
-      ) *
-      2 +
-      1;
-
-    raycaster.setFromCamera(
-      pointer,
-      camera
-    );
-
-    const intersections =
-      raycaster.intersectObject(
-        terrainMesh,
-        false
+    const hit =
+      getTerrainIntersection(
+        event
       );
 
-    if (!intersections.length) {
+    if (
+      !hit
+    ) {
       return;
     }
 
-    sourceLocation.copy(
-      intersections[0].point
+    const point = {
+      x: hit.x,
+      z: hit.z
+    };
+
+    const last =
+      drawingPoints[
+        drawingPoints.length - 1
+      ];
+
+    if (
+      last &&
+      Math.hypot(
+        last.x - point.x,
+        last.z - point.z
+      ) < 0.5
+    ) {
+      return;
+    }
+
+    drawingPoints.push(
+      point
     );
 
-    params.running =
-      false;
+    setDrawingPreview();
 
-    simulationStarted =
-      false;
+    if (
+      event.detail >= 2
+    ) {
+      finishDrawingReleaseShape();
+    }
+  }
+);
 
-    simulationAccumulator =
-      0;
+renderer.domElement.addEventListener(
+  "pointermove",
+  (event) => {
+    if (
+      !drawingReleaseShape
+    ) {
+      return;
+    }
 
-    playButton.textContent =
-      "PLAY";
+    const hit =
+      getTerrainIntersection(
+        event
+      );
 
-    updateSourceVisuals();
-    createParticles();
+    if (
+      hit
+    ) {
+      setDrawingPreview(
+        hit
+      );
+    }
+  }
+);
 
-    setStatus(
-      "SOURCE PLACED"
-    );
+window.addEventListener(
+  "keydown",
+  (event) => {
+    if (
+      !drawingReleaseShape
+    ) {
+      return;
+    }
+
+    if (
+      event.key ===
+      "Escape"
+    ) {
+      event.preventDefault();
+
+      cancelDrawingReleaseShape();
+    }
+
+    if (
+      event.key ===
+      "Enter"
+    ) {
+      event.preventDefault();
+
+      finishDrawingReleaseShape();
+    }
+
+    if (
+      event.key ===
+      "Backspace"
+    ) {
+      event.preventDefault();
+
+      drawingPoints.pop();
+
+      setDrawingPreview();
+    }
   }
 );
 
@@ -5575,55 +7261,32 @@ modelFileInput.addEventListener(
 playButton.addEventListener(
   "click",
   () => {
-    if (!params.running) {
-      simulationStarted =
-        true;
+    if (
+      drawingReleaseShape
+    ) {
+      setStatus(
+        "FINISH OR CANCEL DRAWING FIRST"
+      );
 
-      updateParticleVisibility();
-
-      if (
-        params.particleVisualization ===
-          "soup"
-      ) {
-        updateSoupRenderer(
-          true
-        );
-      }
+      return;
     }
 
-    params.running =
-      !params.running;
-
-    playButton.textContent =
+    if (
       params.running
-        ? "PAUSE"
-        : "PLAY";
-
-    setStatus(
-      params.running
-        ? "RUNNING"
-        : "PAUSED"
-    );
+    ) {
+      pauseSimulation();
+    } else {
+      startSimulation();
+    }
   }
 );
 
 resetButton.addEventListener(
   "click",
   () => {
-    params.running =
-      false;
-
-    simulationStarted =
-      false;
-
-    simulationAccumulator =
-      0;
-
-    soupUpdateAccumulator =
-      0;
-
-    playButton.textContent =
-      "PLAY";
+    stopSimulation(
+      true
+    );
 
     createParticles();
     updateSourceVisuals();
@@ -5715,6 +7378,15 @@ terrainButton.addEventListener(
     currentFileName =
       "";
 
+    releasePolygonLocal =
+      null;
+
+    params.releaseShapeMode =
+      "rectangle";
+
+    releaseShapeModeInput.value =
+      "rectangle";
+
     modelRotation.x =
       0;
 
@@ -5724,24 +7396,11 @@ terrainButton.addEventListener(
     modelRotation.z =
       0;
 
-    params.running =
-      false;
-
-    simulationStarted =
-      false;
-
-    simulationAccumulator =
-      0;
-
-    soupUpdateAccumulator =
-      0;
-
-    playButton.textContent =
-      "PLAY";
+    stopSimulation(
+      true
+    );
 
     updateRotationUI();
-
-    createTerrain();
 
     sourceLocation.set(
       -TERRAIN_SIZE * 0.3,
@@ -5749,8 +7408,9 @@ terrainButton.addEventListener(
       -TERRAIN_SIZE * 0.35
     );
 
-    updateSourceVisuals();
+    createTerrain();
     createParticles();
+    updateSourceVisuals();
 
     dropZone.classList.remove(
       "loaded"
@@ -5780,12 +7440,16 @@ params.particleVisualization =
 params.colorMode =
   colorModeInput.value;
 
+params.releaseShapeMode =
+  releaseShapeModeInput.value;
+
 updateDirectionControls();
 updateRotationUI();
+updateReleaseShapeControls();
 
 createTerrain();
-createSourceVisuals();
 createParticles();
+updateSourceVisuals();
 
 frameCurrentTerrain();
 
@@ -5812,38 +7476,56 @@ function animate() {
       0.05
     );
 
-  if (params.running) {
-    simulateFrame(
-      frameDelta
+  try {
+    if (
+      params.running
+    ) {
+      simulateFrame(
+        frameDelta
+      );
+    }
+
+    if (
+      simulationStarted &&
+      params.particleVisualization ===
+        "points" &&
+      particlePoints
+    ) {
+      syncPointParticles();
+    }
+
+    if (
+      simulationStarted &&
+      params.particleVisualization ===
+        "soup"
+    ) {
+      soupUpdateAccumulator +=
+        frameDelta;
+
+      updateSoupRenderer();
+    }
+
+    controls.update();
+
+    renderer.render(
+      scene,
+      camera
+    );
+  } catch (error) {
+    console.error(
+      error
+    );
+
+    params.running =
+      false;
+
+    playButton.textContent =
+      "PLAY";
+
+    setStatus(
+      "SIMULATION ERROR — CHECK CONSOLE"
     );
   }
-
-  if (
-    simulationStarted &&
-    params.particleVisualization ===
-      "soup"
-  ) {
-    soupUpdateAccumulator +=
-      frameDelta;
-
-    updateSoupRenderer();
-  }
-
-  if (
-    params.particleVisualization ===
-      "points" &&
-    particlePoints
-  ) {
-    particlePoints.visible =
-      simulationStarted;
-  }
-
-  controls.update();
-
-  renderer.render(
-    scene,
-    camera
-  );
 }
 
 animate();

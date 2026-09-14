@@ -64,6 +64,10 @@ select {
   cursor: grab;
 }
 
+#viewer canvas.drawing {
+  cursor: crosshair;
+}
+
 #viewer canvas:active {
   cursor: grabbing;
 }
@@ -79,7 +83,7 @@ select {
   left: 24px;
   z-index: 10;
 
-  width: 340px;
+  width: 350px;
   max-height: calc(100vh - 48px);
 
   overflow-y: auto;
@@ -131,7 +135,7 @@ h1 {
 }
 
 .description {
-  max-width: 260px;
+  max-width: 270px;
 
   margin: 18px 0 28px;
 
@@ -214,8 +218,8 @@ details .control:last-child {
   margin-bottom: 8px;
 }
 
-.direction-control.hidden {
-  display: none;
+.hidden {
+  display: none !important;
 }
 
 .label-row {
@@ -238,7 +242,7 @@ label {
   bottom: calc(100% + 8px);
   z-index: 50;
 
-  width: 260px;
+  width: 270px;
 
   padding: 8px 9px;
 
@@ -270,11 +274,48 @@ label {
 
 
 /* =====================================================
+   CUSTOM SHAPE CONTROLS
+===================================================== */
+
+.shape-control {
+  margin-bottom: 17px;
+  padding: 10px;
+
+  border: 1px dashed var(--line);
+}
+
+.shape-control button {
+  width: 100%;
+  margin: 0 0 6px;
+}
+
+#drawShapeHint {
+  margin-top: 9px;
+
+  color: var(--muted);
+
+  font-size: 8px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+#releaseAreaReadout {
+  margin-top: 9px;
+
+  color: var(--accent-light);
+
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+
+/* =====================================================
    NUMBER INPUTS
 ===================================================== */
 
 .numeric-input {
-  width: 88px;
+  width: 90px;
   min-width: 0;
 
   padding: 3px 5px;
@@ -296,6 +337,12 @@ label {
   border-color: var(--accent);
 }
 
+.numeric-input:disabled,
+input[type="range"]:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .numeric-input::-webkit-inner-spin-button,
 .numeric-input::-webkit-outer-spin-button {
   opacity: 0.6;
@@ -307,7 +354,7 @@ label {
 ===================================================== */
 
 select {
-  width: 155px;
+  width: 160px;
   min-width: 0;
 
   padding: 4px 6px;
@@ -580,7 +627,7 @@ footer {
   }
 
   select {
-    width: 140px;
+    width: 145px;
   }
 
   .control[data-tip]::after {
