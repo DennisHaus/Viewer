@@ -29,8 +29,7 @@ const $ = (id) => {
   return document.getElementById(id);
 };
 
-const viewer =
-  $("viewer");
+const viewer = $("viewer");
 
 const materialFrictionInput =
   $("materialFriction");
@@ -289,7 +288,7 @@ viewer.appendChild(
 
 
 /* =====================================================
-   ORBIT CONTROLS
+   CONTROLS
 ===================================================== */
 
 const controls =
@@ -545,6 +544,9 @@ let soupUpdateAccumulator =
 let drawingReleaseShape =
   false;
 
+let drawingRequiresModifier =
+  true;
+
 let drawingPoints =
   [];
 
@@ -572,7 +574,7 @@ const pointer =
 
 
 /* =====================================================
-   GENERAL HELPERS
+   HELPERS
 ===================================================== */
 
 function clamp(
@@ -660,6 +662,13 @@ function cellKey(
   z
 ) {
   return `${x}:${y}:${z}`;
+}
+
+function hasCommandModifier(event) {
+  return Boolean(
+    event.metaKey ||
+    event.ctrlKey
+  );
 }
 
 
@@ -949,7 +958,7 @@ function proceduralTerrainHeight(
 
 
 /* =====================================================
-   TERRAIN SAMPLING
+   TERRAIN HEIGHT
 ===================================================== */
 
 function sampleCustomTerrain(
@@ -1248,15 +1257,14 @@ function polygonArea(
 function polygonCentroid(
   points
 ) {
-  const signedArea =
+  const area =
     polygonSignedArea(
       points
     );
 
   if (
-    Math.abs(
-      signedArea
-    ) < 0.000001
+    Math.abs(area) <
+    0.000001
   ) {
     const average =
       points.reduce(
@@ -1330,14 +1338,14 @@ function polygonCentroid(
       x /
       (
         6 *
-        signedArea
+        area
       ),
 
     z:
       z /
       (
         6 *
-        signedArea
+        area
       )
   };
 }
@@ -1426,7 +1434,9 @@ function pointInPolygon(
       ) +
       xi;
 
-    if (intersects) {
+    if (
+      intersects
+    ) {
       inside =
         !inside;
     }
@@ -1491,7 +1501,7 @@ function segmentsIntersect(
       b
     );
 
-  const proper =
+  return (
     (
       o1 > epsilon &&
       o2 < -epsilon ||
@@ -1503,9 +1513,8 @@ function segmentsIntersect(
       o4 < -epsilon ||
       o3 < -epsilon &&
       o4 > epsilon
-    );
-
-  return proper;
+    )
+  );
 }
 
 function polygonSelfIntersects(
@@ -1601,8 +1610,6 @@ function getRectanglePolygonLocal() {
 
 function hasValidCustomPolygon() {
   return (
-    params.releaseShapeMode ===
-      "polygon" &&
     releasePolygonLocal &&
     releasePolygonLocal.length >= 3 &&
     polygonArea(
@@ -1613,16 +1620,12 @@ function hasValidCustomPolygon() {
 
 function getReleasePolygonLocal() {
   if (
-    hasValidCustomPolygon()
-  ) {
-    return releasePolygonLocal;
-  }
-
-  if (
     params.releaseShapeMode ===
-    "polygon"
+      "polygon"
   ) {
-    return null;
+    return hasValidCustomPolygon()
+      ? releasePolygonLocal
+      : null;
   }
 
   return getRectanglePolygonLocal();
@@ -1680,7 +1683,7 @@ function getSourceHeight() {
 
 
 /* =====================================================
-   RELEASE SHAPE DISPLAY
+   SOURCE VISUALIZATION
 ===================================================== */
 
 function createReleaseOutline(
@@ -1724,24 +1727,24 @@ function createReleaseOutline(
       point.z;
   }
 
-  const last =
+  const first =
     worldPolygon[0];
 
   const lastIndex =
     worldPolygon.length;
 
   positions[lastIndex * 3] =
-    last.x;
+    first.x;
 
   positions[lastIndex * 3 + 1] =
     terrainHeight(
-      last.x,
-      last.z
+      first.x,
+      first.z
     ) +
     SURFACE_CLEARANCE;
 
   positions[lastIndex * 3 + 2] =
-    last.z;
+    first.z;
 
   const geometry =
     new THREE.BufferGeometry();
@@ -1802,7 +1805,7 @@ function createReleaseVolumeMesh(
     const point =
       worldPolygon[i];
 
-    const baseY =
+    const groundY =
       terrainHeight(
         point.x,
         point.z
@@ -1813,7 +1816,7 @@ function createReleaseVolumeMesh(
       point.x;
 
     positions[i * 3 + 1] =
-      baseY;
+      groundY;
 
     positions[i * 3 + 2] =
       point.z;
@@ -1826,7 +1829,7 @@ function createReleaseVolumeMesh(
       point.x;
 
     positions[topIndex * 3 + 1] =
-      baseY +
+      groundY +
       height;
 
     positions[topIndex * 3 + 2] =
@@ -1836,10 +1839,10 @@ function createReleaseVolumeMesh(
   const polygon2D =
     worldPolygon.map(
       (point) => {
-        return {
-          x: point.x,
-          y: point.z
-        };
+        return new THREE.Vector2(
+          point.x,
+          point.z
+        );
       }
     );
 
@@ -1950,6 +1953,48 @@ function createReleaseVolumeMesh(
   return mesh;
 }
 
+function updateReleaseShapeControls() {
+  const polygonMode =
+    params.releaseShapeMode ===
+    "polygon";
+
+  rectangleAreaControl.classList.toggle(
+    "hidden",
+    polygonMode
+  );
+
+  customShapeControl.classList.toggle(
+    "hidden",
+    !polygonMode
+  );
+
+  sourceAreaInput.disabled =
+    polygonMode;
+
+  sourceAreaNumber.disabled =
+    polygonMode;
+
+  if (
+    polygonMode &&
+    hasValidCustomPolygon()
+  ) {
+    releaseAreaReadout.textContent =
+      `DRAWN AREA ${formatNumber(
+        getReleaseArea()
+      )} m²`;
+  } else if (
+    polygonMode
+  ) {
+    releaseAreaReadout.textContent =
+      "NO CUSTOM SHAPE";
+  } else {
+    releaseAreaReadout.textContent =
+      `AREA ${formatNumber(
+        getReleaseArea()
+      )} m²`;
+  }
+}
+
 function updateSourceVisuals() {
   disposeObject(
     releaseOutline
@@ -1981,78 +2026,37 @@ function updateSourceVisuals() {
         worldPolygon
       );
 
-    if (releaseOutline) {
+    if (
+      releaseOutline
+    ) {
       releaseOutline.visible =
-        !simulationStarted;
+        !simulationStarted &&
+        !drawingReleaseShape;
 
       scene.add(
         releaseOutline
       );
     }
 
-    if (releaseVolumePreview) {
+    if (
+      releaseVolumePreview
+    ) {
       releaseVolumePreview.visible =
-        !simulationStarted;
+        !simulationStarted &&
+        !drawingReleaseShape;
 
       scene.add(
         releaseVolumePreview
       );
     }
-
-    sourceLocation.y =
-      terrainHeight(
-        sourceLocation.x,
-        sourceLocation.z
-      ) +
-      SURFACE_CLEARANCE;
   }
 
   updateReleaseShapeControls();
 }
 
-function updateReleaseShapeControls() {
-  const polygonMode =
-    params.releaseShapeMode ===
-    "polygon";
-
-  rectangleAreaControl.classList.toggle(
-    "hidden",
-    polygonMode
-  );
-
-  customShapeControl.classList.toggle(
-    "hidden",
-    !polygonMode
-  );
-
-  sourceAreaInput.disabled =
-    polygonMode;
-
-  sourceAreaNumber.disabled =
-    polygonMode;
-
-  if (
-    polygonMode &&
-    hasValidCustomPolygon()
-  ) {
-    releaseAreaReadout.textContent =
-      `DRAWN AREA ${formatNumber(
-        getReleaseArea()
-      )} m²`;
-  } else if (polygonMode) {
-    releaseAreaReadout.textContent =
-      "NO CUSTOM SHAPE";
-  } else {
-    releaseAreaReadout.textContent =
-      `AREA ${formatNumber(
-        getReleaseArea()
-      )} m²`;
-  }
-}
-
 
 /* =====================================================
-   DRAWING CUSTOM POLYGON
+   DRAWING CUSTOM SHAPE
 ===================================================== */
 
 function getTerrainIntersection(
@@ -2101,13 +2105,9 @@ function getTerrainIntersection(
       false
     );
 
-  if (
-    !intersections.length
-  ) {
-    return null;
-  }
-
-  return intersections[0].point;
+  return intersections.length
+    ? intersections[0].point
+    : null;
 }
 
 function setDrawingPreview(
@@ -2121,22 +2121,17 @@ function setDrawingPreview(
     null;
 
   const points =
-    drawingPoints.map(
-      (point) => {
-        return {
-          x: point.x,
-          z: point.z
-        };
-      }
-    );
+    drawingPoints.slice();
 
   if (
     extraPoint
   ) {
-    points.push({
-      x: extraPoint.x,
-      z: extraPoint.z
-    });
+    points.push(
+      {
+        x: extraPoint.x,
+        z: extraPoint.z
+      }
+    );
   }
 
   if (
@@ -2204,19 +2199,40 @@ function setDrawingPreview(
   );
 }
 
-function startDrawingReleaseShape() {
+function startDrawingReleaseShape(
+  requiresModifier = true
+) {
   if (
     drawingReleaseShape
   ) {
     return;
   }
 
+  if (
+    !terrainMesh
+  ) {
+    setStatus(
+      "NO TERRAIN AVAILABLE"
+    );
+
+    return;
+  }
+
   stopSimulation(
-    false
+    true
   );
+
+  params.releaseShapeMode =
+    "polygon";
+
+  releaseShapeModeInput.value =
+    "polygon";
 
   drawingReleaseShape =
     true;
+
+  drawingRequiresModifier =
+    requiresModifier;
 
   drawingPoints =
     [];
@@ -2228,21 +2244,17 @@ function startDrawingReleaseShape() {
     "drawing"
   );
 
-  if (releaseOutline) {
-    releaseOutline.visible =
-      false;
-  }
-
-  if (releaseVolumePreview) {
-    releaseVolumePreview.visible =
-      false;
-  }
+  updateSourceVisuals();
 
   drawShapeHint.textContent =
-    "Click terrain points. Press ENTER to finish or ESCAPE to cancel.";
+    requiresModifier
+      ? "Hold CMD and left-click each terrain point. Press ENTER to finish."
+      : "Left-click terrain points. Press ENTER to finish.";
 
   setStatus(
-    "DRAWING RELEASE SHAPE"
+    requiresModifier
+      ? "CMD + CLICK TO DRAW"
+      : "DRAWING RELEASE SHAPE"
   );
 }
 
@@ -2295,14 +2307,11 @@ function finishDrawingReleaseShape() {
         points.length - 1
       ];
 
-    const distance =
+    if (
       Math.hypot(
         first.x - last.x,
         first.z - last.z
-      );
-
-    if (
-      distance < 0.5
+      ) < 0.5
     ) {
       points =
         points.slice(
@@ -2369,17 +2378,17 @@ function finishDrawingReleaseShape() {
       }
     );
 
-  params.releaseShapeMode =
-    "polygon";
-
-  releaseShapeModeInput.value =
-    "polygon";
-
   sourceLocation.x =
     centroid.x;
 
   sourceLocation.z =
     centroid.z;
+
+  params.releaseShapeMode =
+    "polygon";
+
+  releaseShapeModeInput.value =
+    "polygon";
 
   drawingReleaseShape =
     false;
@@ -2405,7 +2414,7 @@ function finishDrawingReleaseShape() {
   updateSourceVisuals();
 
   drawShapeHint.textContent =
-    "Custom polygon active. Draw again to replace it.";
+    "Custom polygon active. Hold CMD and click DRAW RELEASE SHAPE to replace it.";
 
   setStatus(
     `CUSTOM AREA ${formatNumber(
@@ -2436,7 +2445,7 @@ function clearCustomReleaseShape() {
 
 
 /* =====================================================
-   PARTICLE COUNT AND VOLUME
+   PARTICLE COUNT
 ===================================================== */
 
 function getRequestedParticleCount() {
@@ -2469,45 +2478,16 @@ function updateParticleCountStatus() {
   const simulated =
     getParticleCount();
 
-  if (
-    requested ===
-    simulated
-  ) {
-    particleCountStatus.textContent =
-      `${formatNumber(
-        requested
-      )} PARTICLES`;
-  } else {
-    particleCountStatus.textContent =
-      `${formatNumber(
-        simulated
-      )} / ${formatNumber(
-        requested
-      )} PARTICLES`;
-  }
-}
-
-function getParticleRadius() {
-  return Math.cbrt(
-    parcelVolume *
-    3 /
-    (
-      4 *
-      Math.PI
-    )
-  );
-}
-
-function getParticleContactRadius() {
-  if (
-    params.particleVisualization ===
-    "points"
-  ) {
-    return parcelRadius *
-      params.particleSize;
-  }
-
-  return parcelRadius;
+  particleCountStatus.textContent =
+    requested === simulated
+      ? `${formatNumber(
+          requested
+        )} PARTICLES`
+      : `${formatNumber(
+          simulated
+        )} / ${formatNumber(
+          requested
+        )} PARTICLES`;
 }
 
 
@@ -2719,7 +2699,7 @@ function terrainGradient(
 
 
 /* =====================================================
-   SOURCE PARTICLE POSITIONS
+   SOURCE PARTICLE DISTRIBUTION
 ===================================================== */
 
 function generateInteriorPoints(
@@ -2749,7 +2729,7 @@ function generateInteriorPoints(
     width /
     depth;
 
-  const nx =
+  const columns =
     Math.max(
       1,
       Math.ceil(
@@ -2760,12 +2740,12 @@ function generateInteriorPoints(
       )
     );
 
-  const nz =
+  const rows =
     Math.max(
       1,
       Math.ceil(
         count /
-        nx
+        columns
       )
     );
 
@@ -2773,32 +2753,32 @@ function generateInteriorPoints(
     [];
 
   for (
-    let iz = 0;
-    iz < nz;
-    iz++
+    let row = 0;
+    row < rows;
+    row++
   ) {
     for (
-      let ix = 0;
-      ix < nx;
-      ix++
+      let column = 0;
+      column < columns;
+      column++
     ) {
       const point = {
         x:
           bounds.minX +
           (
-            ix +
+            column +
             0.5
           ) /
-          nx *
+          columns *
           width,
 
         z:
           bounds.minZ +
           (
-            iz +
+            row +
             0.5
           ) /
-          nz *
+          rows *
           depth
       };
 
@@ -2816,75 +2796,16 @@ function generateInteriorPoints(
   }
 
   if (
-    points.length >
-    count
+    points.length === 0
   ) {
-    const stride =
-      points.length /
-      count;
-
-    return Array.from(
-      {
-        length: count
-      },
-      (_, index) => {
-        return points[
-          Math.floor(
-            index *
-            stride
-          )
-        ];
-      }
-    );
-  }
-
-  let attempts =
-    0;
-
-  const maxAttempts =
-    count *
-    50;
-
-  while (
-    points.length <
-      count &&
-    attempts <
-      maxAttempts
-  ) {
-    attempts++;
-
-    const point = {
-      x:
-        bounds.minX +
-        Math.random() *
-        width,
-
-      z:
-        bounds.minZ +
-        Math.random() *
-        depth
-    };
-
-    if (
-      pointInPolygon(
-        point,
+    const center =
+      polygonCentroid(
         polygon
-      )
-    ) {
-      points.push(
-        point
       );
-    }
-  }
 
-  if (
-    points.length ===
-    0
-  ) {
-    points.push({
-      x: 0,
-      z: 0
-    });
+    points.push(
+      center
+    );
   }
 
   while (
@@ -2907,13 +2828,10 @@ function generateInteriorPoints(
 
 function createSourceLayout() {
   const polygon =
-    getReleasePolygonLocal();
-
-  const activePolygon =
-    polygon ||
+    getReleasePolygonLocal() ||
     getRectanglePolygonLocal();
 
-  const sourceArea =
+  const area =
     Math.max(
       getReleaseArea(),
       1
@@ -2921,7 +2839,7 @@ function createSourceLayout() {
 
   const sourceHeight =
     params.sourceVolume /
-    sourceArea;
+    area;
 
   const diameter =
     parcelRadius *
@@ -2950,24 +2868,31 @@ function createSourceLayout() {
 
   const positions =
     generateInteriorPoints(
-      activePolygon,
+      polygon,
       pointsPerLayer
-    );
-
-  const verticalSpacing =
-    Math.max(
-      diameter *
-      1.02,
-      sourceHeight /
-      layers
     );
 
   return {
     layers,
-    positions,
     pointsPerLayer,
-    verticalSpacing
+    positions,
+
+    verticalSpacing:
+      Math.max(
+        diameter *
+        1.02,
+        sourceHeight /
+        layers
+      )
   };
+}
+
+function getParticleVisualRadius() {
+  return params.particleVisualization ===
+    "points"
+    ? parcelRadius *
+      params.particleSize
+    : parcelRadius;
 }
 
 function placeParticleAtSource(
@@ -2989,18 +2914,18 @@ function placeParticleAtSource(
     particle.sourceIndex %
     sourceLayout.pointsPerLayer;
 
-  const localPosition =
+  const local =
     sourceLayout.positions[
       slot
     ];
 
   const x =
     sourceLocation.x +
-    localPosition.x;
+    local.x;
 
   const z =
     sourceLocation.z +
-    localPosition.z;
+    local.z;
 
   const groundY =
     terrainHeight(
@@ -3008,15 +2933,12 @@ function placeParticleAtSource(
       z
     );
 
-  const contactRadius =
-    getParticleContactRadius();
-
   particle.x =
     x;
 
   particle.y =
     groundY +
-    contactRadius +
+    getParticleVisualRadius() +
     layer *
     sourceLayout.verticalSpacing;
 
@@ -3041,6 +2963,9 @@ function placeParticleAtSource(
     params.startVelocity;
 
   particle.age =
+    0;
+
+  particle.launchAge =
     0;
 
   particle.distanceTraveled =
@@ -3069,6 +2994,7 @@ function createRandomParticle(
     vz: 0,
 
     age: 0,
+    launchAge: 0,
     distanceTraveled: 0,
     speed: 0,
     thickness: 0,
@@ -3108,7 +3034,7 @@ function resetParticle(
 
 
 /* =====================================================
-   PARTICLE METRICS AND COLORS
+   PARTICLE METRICS
 ===================================================== */
 
 function updateParticleMetrics() {
@@ -3127,10 +3053,11 @@ function updateParticleMetrics() {
       Math.min(
         getTerrainWidth(),
         getTerrainDepth()
-      ) / 128
+      ) /
+      128
     );
 
-  const thicknessCells =
+  const cells =
     new Map();
 
   for (
@@ -3161,25 +3088,25 @@ function updateParticleMetrics() {
         particle.age
       );
 
-    const cellX =
+    const x =
       Math.floor(
         particle.x /
         cellSize
       );
 
-    const cellZ =
+    const z =
       Math.floor(
         particle.z /
         cellSize
       );
 
     const key =
-      `${cellX}:${cellZ}`;
+      `${x}:${z}`;
 
-    thicknessCells.set(
+    cells.set(
       key,
       (
-        thicknessCells.get(
+        cells.get(
           key
         ) || 0
       ) +
@@ -3193,13 +3120,13 @@ function updateParticleMetrics() {
   for (
     const particle of particles
   ) {
-    const cellX =
+    const x =
       Math.floor(
         particle.x /
         cellSize
       );
 
-    const cellZ =
+    const z =
       Math.floor(
         particle.z /
         cellSize
@@ -3219,8 +3146,8 @@ function updateParticleMetrics() {
         dz++
       ) {
         localVolume +=
-          thicknessCells.get(
-            `${cellX + dx}:${cellZ + dz}`
+          cells.get(
+            `${x + dx}:${z + dz}`
           ) || 0;
       }
     }
@@ -3355,19 +3282,20 @@ function updateParticleColor(
 ===================================================== */
 
 function getProjectionScale() {
-  const drawingBufferSize =
+  const size =
     new THREE.Vector2();
 
   renderer.getDrawingBufferSize(
-    drawingBufferSize
+    size
   );
 
-  return drawingBufferSize.y /
+  return size.y /
     (
       2 *
       Math.tan(
         THREE.MathUtils.degToRad(
-          camera.fov * 0.5
+          camera.fov *
+          0.5
         )
       )
     );
@@ -3496,7 +3424,10 @@ function createPointParticles() {
               1.0,
               diameter *
               projectionScale /
-              max(1.0, -modelPosition.z)
+              max(
+                1.0,
+                -modelPosition.z
+              )
             );
 
           vParticleColor =
@@ -3515,7 +3446,9 @@ function createPointParticles() {
           float distanceFromCenter =
             length(coordinate);
 
-          if (distanceFromCenter > 0.5) {
+          if (
+            distanceFromCenter > 0.5
+          ) {
             discard;
           }
 
@@ -3547,6 +3480,13 @@ function createPointParticles() {
 
   particlePoints.renderOrder =
     30;
+
+  /*
+    Keep points visible even while paused
+    and before the first simulation frame.
+  */
+  particlePoints.visible =
+    true;
 
   scene.add(
     particlePoints
@@ -3612,6 +3552,9 @@ function syncPointParticles() {
     .particleColor
     .needsUpdate =
     true;
+
+  particlePoints.visible =
+    true;
 }
 
 function updatePointMaterial() {
@@ -3652,19 +3595,19 @@ function buildParticleGrid(
     const particle =
       particles[i];
 
-    const cellX =
+    const x =
       Math.floor(
         particle.x /
         cellSize
       );
 
-    const cellY =
+    const y =
       Math.floor(
         particle.y /
         cellSize
       );
 
-    const cellZ =
+    const z =
       Math.floor(
         particle.z /
         cellSize
@@ -3672,9 +3615,9 @@ function buildParticleGrid(
 
     const key =
       cellKey(
-        cellX,
-        cellY,
-        cellZ
+        x,
+        y,
+        z
       );
 
     let bucket =
@@ -3682,8 +3625,11 @@ function buildParticleGrid(
         key
       );
 
-    if (!bucket) {
-      bucket = [];
+    if (
+      !bucket
+    ) {
+      bucket =
+        [];
 
       grid.set(
         key,
@@ -3701,7 +3647,7 @@ function buildParticleGrid(
 
 
 /* =====================================================
-   PARTICLE COHESION
+   COHESION
 ===================================================== */
 
 function applyCohesionForces(
@@ -3784,7 +3730,9 @@ function applyCohesionForces(
               )
             );
 
-          if (!bucket) {
+          if (
+            !bucket
+          ) {
             continue;
           }
 
@@ -3817,10 +3765,9 @@ function applyCohesionForces(
               );
 
             if (
-              distance <=
-              diameter ||
+              distance <= diameter ||
               distance >=
-              interactionDistance
+                interactionDistance
             ) {
               continue;
             }
@@ -3849,7 +3796,7 @@ function applyCohesionForces(
 
             const force =
               cohesion *
-              COHESION_STRENGTH *
+              5 *
               falloff *
               falloff *
               deltaTime;
@@ -3886,7 +3833,7 @@ function applyCohesionForces(
 
 
 /* =====================================================
-   TERRAIN CONTACT
+   TERRAIN CONTACT AND COLLISIONS
 ===================================================== */
 
 function applyTerrainContact(
@@ -3898,7 +3845,7 @@ function applyTerrainContact(
       particle.x,
       particle.z
     ) +
-    getParticleContactRadius() +
+    getParticleVisualRadius() +
     SURFACE_CLEARANCE;
 
   if (
@@ -3916,13 +3863,10 @@ function applyTerrainContact(
     }
   }
 
-  const touchingGround =
+  if (
     particle.y <=
     groundY +
-    0.01;
-
-  if (
-    touchingGround
+    0.01
   ) {
     const damping =
       Math.exp(
@@ -3947,11 +3891,6 @@ function applyTerrainContact(
     }
   }
 }
-
-
-/* =====================================================
-   PARTICLE COLLISIONS
-===================================================== */
 
 function resolveParticleCollisions() {
   if (
@@ -4023,7 +3962,9 @@ function resolveParticleCollisions() {
               )
             );
 
-          if (!bucket) {
+          if (
+            !bucket
+          ) {
             continue;
           }
 
@@ -4140,11 +4081,7 @@ function resolveParticleCollisions() {
               normalVelocity < 0
             ) {
               const impulse =
-                -(
-                  1 +
-                  COLLISION_RESTITUTION
-                ) *
-                normalVelocity *
+                -normalVelocity *
                 0.5;
 
               a.vx -=
@@ -4319,7 +4256,7 @@ function updatePhysics(
       deltaTime;
 
     particle.vy -=
-      GRAVITY *
+      9.81 *
       deltaTime;
 
     particle.vx *=
@@ -4336,13 +4273,13 @@ function updatePhysics(
 
     if (
       particle.launchAge <
-      params.launchDuration &&
+        params.launchDuration &&
       params.startVelocity > 0 &&
       horizontalSpeed <
-      Math.max(
-        params.startVelocity,
-        params.minimumMovementSpeed
-      )
+        Math.max(
+          params.startVelocity,
+          params.minimumMovementSpeed
+        )
     ) {
       const direction =
         getLaunchDirection(
@@ -4396,9 +4333,14 @@ function updatePhysics(
 
     particle.distanceTraveled +=
       Math.hypot(
-        particle.x - oldX,
-        particle.y - oldY,
-        particle.z - oldZ
+        particle.x -
+          oldX,
+
+        particle.y -
+          oldY,
+
+        particle.z -
+          oldZ
       );
 
     const speed =
@@ -4409,9 +4351,9 @@ function updatePhysics(
 
     particle.deposited =
       particle.launchAge >=
-      params.launchDuration &&
+        params.launchDuration &&
       speed <
-      settlingThreshold;
+        settlingThreshold;
   }
 
   for (
@@ -4445,16 +4387,13 @@ function updatePhysics(
   ) {
     const outside =
       particle.x <
-      -terrainWidth * 0.62 ||
-
+        -terrainWidth * 0.62 ||
       particle.x >
-      terrainWidth * 0.62 ||
-
+        terrainWidth * 0.62 ||
       particle.z <
-      -terrainDepth * 0.62 ||
-
+        -terrainDepth * 0.62 ||
       particle.z >
-      terrainDepth * 0.62;
+        terrainDepth * 0.62;
 
     if (
       outside ||
@@ -4509,20 +4448,20 @@ function simulateFrame(
 
 function clearSoupRenderers() {
   for (
-    const rendererObject of soupRenderers
+    const soup of soupRenderers
   ) {
     if (
-      rendererObject.parent
+      soup.parent
     ) {
-      rendererObject.parent.remove(
-        rendererObject
+      soup.parent.remove(
+        soup
       );
     }
 
     if (
-      rendererObject.geometry
+      soup.geometry
     ) {
-      rendererObject.geometry.dispose();
+      soup.geometry.dispose();
     }
   }
 
@@ -4778,291 +4717,6 @@ function getComponentBounds(
   return bounds;
 }
 
-function splitComponentForSoup(
-  component,
-  linkDistance
-) {
-  const bounds =
-    getComponentBounds(
-      component
-    );
-
-  const maxFieldSize =
-    Math.max(
-      linkDistance * 12,
-      8
-    );
-
-  const largestDimension =
-    Math.max(
-      bounds.maxX -
-        bounds.minX,
-
-      bounds.maxY -
-        bounds.minY,
-
-      bounds.maxZ -
-        bounds.minZ
-    );
-
-  if (
-    largestDimension <=
-    maxFieldSize
-  ) {
-    return [
-      component
-    ];
-  }
-
-  const cellSize =
-    maxFieldSize *
-    0.7;
-
-  const buckets =
-    new Map();
-
-  for (
-    const index of component
-  ) {
-    const particle =
-      particles[index];
-
-    const x =
-      Math.floor(
-        particle.x /
-        cellSize
-      );
-
-    const y =
-      Math.floor(
-        particle.y /
-        cellSize
-      );
-
-    const z =
-      Math.floor(
-        particle.z /
-        cellSize
-      );
-
-    const key =
-      cellKey(
-        x,
-        y,
-        z
-      );
-
-    let bucket =
-      buckets.get(
-        key
-      );
-
-    if (
-      !bucket
-    ) {
-      bucket =
-        [];
-
-      buckets.set(
-        key,
-        bucket
-      );
-    }
-
-    bucket.push(
-      index
-    );
-  }
-
-  return Array.from(
-    buckets.values()
-  );
-}
-
-function buildSoupRenderGroups() {
-  const componentData =
-    buildParticleComponents();
-
-  const groups =
-    [];
-
-  for (
-    const component of
-      componentData.components
-  ) {
-    const split =
-      splitComponentForSoup(
-        component,
-        componentData.linkDistance
-      );
-
-    groups.push(
-      ...split
-    );
-  }
-
-  groups.sort(
-    (a, b) => {
-      return b.length -
-        a.length;
-    }
-  );
-
-  return {
-    groups: groups.slice(
-      0,
-      MAX_SOUP_FIELDS
-    ),
-
-    linkDistance:
-      componentData.linkDistance
-  };
-}
-
-function getGroupBalls(
-  group
-) {
-  if (
-    group.length <=
-    MAX_SOUP_BALLS_PER_FIELD
-  ) {
-    return group.map(
-      (index) => {
-        return {
-          x:
-            particles[index].x,
-
-          y:
-            particles[index].y,
-
-          z:
-            particles[index].z,
-
-          color:
-            particles[index].color
-        };
-      }
-    );
-  }
-
-  const cellSize =
-    getSoupLinkDistance();
-
-  const bins =
-    new Map();
-
-  for (
-    const index of group
-  ) {
-    const particle =
-      particles[index];
-
-    const x =
-      Math.floor(
-        particle.x /
-        cellSize
-      );
-
-    const y =
-      Math.floor(
-        particle.y /
-        cellSize
-      );
-
-    const z =
-      Math.floor(
-        particle.z /
-        cellSize
-      );
-
-    const key =
-      cellKey(
-        x,
-        y,
-        z
-      );
-
-    let bin =
-      bins.get(
-        key
-      );
-
-    if (
-      !bin
-    ) {
-      bin = {
-        x: 0,
-        y: 0,
-        z: 0,
-        r: 0,
-        g: 0,
-        b: 0,
-        count: 0
-      };
-
-      bins.set(
-        key,
-        bin
-      );
-    }
-
-    bin.x +=
-      particle.x;
-
-    bin.y +=
-      particle.y;
-
-    bin.z +=
-      particle.z;
-
-    bin.r +=
-      particle.color.r;
-
-    bin.g +=
-      particle.color.g;
-
-    bin.b +=
-      particle.color.b;
-
-    bin.count++;
-  }
-
-  return Array.from(
-    bins.values()
-  ).map(
-    (bin) => {
-      return {
-        x:
-          bin.x /
-          bin.count,
-
-        y:
-          bin.y /
-          bin.count,
-
-        z:
-          bin.z /
-          bin.count,
-
-        color:
-          new THREE.Color(
-            bin.r /
-              bin.count,
-
-            bin.g /
-              bin.count,
-
-            bin.b /
-              bin.count
-          )
-      };
-    }
-  ).slice(
-    0,
-    MAX_SOUP_BALLS_PER_FIELD
-  );
-}
-
 function ensureSoupRenderers(
   count
 ) {
@@ -5085,11 +4739,11 @@ function ensureSoupRenderers(
   ) {
     const soup =
       new MarchingCubes(
-        SOUP_RESOLUTION,
+        32,
         soupMaterial,
         false,
         true,
-        SOUP_MAX_POLYGONS
+        50000
       );
 
     soup.enableUvs =
@@ -5104,11 +4758,11 @@ function ensureSoupRenderers(
     soup.frustumCulled =
       false;
 
-    soup.renderOrder =
-      25;
-
     soup.visible =
       false;
+
+    soup.renderOrder =
+      25;
 
     soupRenderers.push(
       soup
@@ -5167,11 +4821,16 @@ function updateSoupRenderer(
 
   updateParticleMetrics();
 
-  const soupData =
-    buildSoupRenderGroups();
+  const data =
+    buildParticleComponents();
 
+  /*
+    Very small components are still rendered.
+    This prevents the soup from disappearing
+    when particles separate.
+  */
   ensureSoupRenderers(
-    soupData.groups.length
+    data.components.length
   );
 
   const subtract =
@@ -5180,11 +4839,11 @@ function updateSoupRenderer(
   for (
     let groupIndex = 0;
     groupIndex <
-      soupData.groups.length;
+      data.components.length;
     groupIndex++
   ) {
     const group =
-      soupData.groups[
+      data.components[
         groupIndex
       ];
 
@@ -5200,7 +4859,7 @@ function updateSoupRenderer(
 
     const margin =
       Math.max(
-        soupData.linkDistance *
+        data.linkDistance *
           0.75,
         parcelRadius,
         0.5
@@ -5217,7 +4876,7 @@ function updateSoupRenderer(
         bounds.maxZ -
           bounds.minZ,
 
-        soupData.linkDistance *
+        data.linkDistance *
           2
       ) +
       margin *
@@ -5275,8 +4934,7 @@ function updateSoupRenderer(
       Math.max(
         parcelRadius *
           0.55,
-
-        soupData.linkDistance *
+        data.linkDistance *
           0.5
       );
 
@@ -5292,23 +4950,44 @@ function updateSoupRenderer(
       normalizedRadius *
       normalizedRadius;
 
-    const balls =
-      getGroupBalls(
-        group
-      );
+    let selectedGroup =
+      group;
+
+    if (
+      selectedGroup.length >
+      500
+    ) {
+      const stride =
+        Math.ceil(
+          selectedGroup.length /
+          500
+        );
+
+      selectedGroup =
+        selectedGroup.filter(
+          (_, index) => {
+            return index %
+              stride ===
+              0;
+          }
+        );
+    }
 
     for (
-      const ball of balls
+      const index of selectedGroup
     ) {
+      const particle =
+        particles[index];
+
       const terrainY =
         terrainHeight(
-          ball.x,
-          ball.z
+          particle.x,
+          particle.z
         );
 
       const centerY =
         Math.max(
-          ball.y,
+          particle.y,
           terrainY +
             desiredRadius +
             SURFACE_CLEARANCE
@@ -5317,7 +4996,7 @@ function updateSoupRenderer(
       const normalizedX =
         clamp(
           (
-            ball.x -
+            particle.x -
             minX
           ) /
           fieldSize,
@@ -5339,7 +5018,7 @@ function updateSoupRenderer(
       const normalizedZ =
         clamp(
           (
-            ball.z -
+            particle.z -
             minZ
           ) /
           fieldSize,
@@ -5353,7 +5032,7 @@ function updateSoupRenderer(
         normalizedZ,
         strength,
         subtract,
-        ball.color
+        particle.color
       );
     }
 
@@ -5365,7 +5044,7 @@ function updateSoupRenderer(
 
   for (
     let i =
-      soupData.groups.length;
+      data.components.length;
     i < soupRenderers.length;
     i++
   ) {
@@ -5376,17 +5055,21 @@ function updateSoupRenderer(
 
 
 /* =====================================================
-   VISIBILITY AND PARTICLE CREATION
+   PARTICLES AND SIMULATION STATE
 ===================================================== */
 
 function updateParticleVisibility() {
   if (
     particlePoints
   ) {
+    /*
+      Point particles are always visible.
+      This fixes the previous state where they
+      could disappear during the first play frame.
+    */
     particlePoints.visible =
-      simulationStarted &&
       params.particleVisualization ===
-        "points";
+      "points";
   }
 
   for (
@@ -5395,7 +5078,7 @@ function updateParticleVisibility() {
     soup.visible =
       simulationStarted &&
       params.particleVisualization ===
-        "soup";
+      "soup";
   }
 
   if (
@@ -5439,7 +5122,14 @@ function createParticles() {
     particleCount;
 
   parcelRadius =
-    getParticleRadius();
+    Math.cbrt(
+      parcelVolume *
+      3 /
+      (
+        4 *
+        Math.PI
+      )
+    );
 
   sourceLayout =
     createSourceLayout();
@@ -5486,11 +5176,6 @@ function createParticles() {
   }
 }
 
-
-/* =====================================================
-   SIMULATION STATE
-===================================================== */
-
 function canStartSimulation() {
   if (
     params.releaseShapeMode ===
@@ -5532,7 +5217,7 @@ function startSimulation() {
   if (
     !canStartSimulation()
   ) {
-    return false;
+    return;
   }
 
   simulationStarted =
@@ -5552,6 +5237,17 @@ function startSimulation() {
 
   updateParticleVisibility();
 
+  /*
+    Synchronize immediately before the first
+    render so particles cannot appear frozen
+    or invisible for one frame.
+  */
+  if (
+    particlePoints
+  ) {
+    syncPointParticles();
+  }
+
   if (
     params.particleVisualization ===
       "soup"
@@ -5564,8 +5260,6 @@ function startSimulation() {
   setStatus(
     "RUNNING"
   );
-
-  return true;
 }
 
 function pauseSimulation() {
@@ -5574,6 +5268,12 @@ function pauseSimulation() {
 
   playButton.textContent =
     "PLAY";
+
+  if (
+    particlePoints
+  ) {
+    syncPointParticles();
+  }
 
   setStatus(
     "PAUSED"
@@ -5918,9 +5618,15 @@ function createTerrainFromPoints(
     bounds.min.y;
 
   if (
-    !Number.isFinite(widthModel) ||
-    !Number.isFinite(depthModel) ||
-    !Number.isFinite(heightModel) ||
+    !Number.isFinite(
+      widthModel
+    ) ||
+    !Number.isFinite(
+      depthModel
+    ) ||
+    !Number.isFinite(
+      heightModel
+    ) ||
     widthModel <= 0 ||
     depthModel <= 0 ||
     heightModel <= 0
@@ -5990,7 +5696,10 @@ function createTerrainFromPoints(
       clamp(
         Math.floor(
           normalizedX *
-          (resolution - 1)
+          (
+            resolution -
+            1
+          )
         ),
         0,
         resolution - 1
@@ -6000,7 +5709,10 @@ function createTerrainFromPoints(
       clamp(
         Math.floor(
           normalizedZ *
-          (resolution - 1)
+          (
+            resolution -
+            1
+          )
         ),
         0,
         resolution - 1
@@ -6334,7 +6046,9 @@ function snapRotation(
     Number(value);
 
   if (
-    !Number.isFinite(number)
+    !Number.isFinite(
+      number
+    )
   ) {
     return 0;
   }
@@ -6807,24 +6521,6 @@ bindNumericSlider(
 );
 
 bindNumericSlider(
-  sourceVolumeInput,
-  sourceVolumeNumber,
-  (value) => {
-    params.sourceVolume =
-      value;
-
-    updateSourceVisuals();
-    scheduleParticleRebuild();
-
-    setStatus(
-      `SOURCE ${formatNumber(
-        value
-      )} m³`
-    );
-  }
-);
-
-bindNumericSlider(
   sourceAreaInput,
   sourceAreaNumber,
   (value) => {
@@ -6838,6 +6534,24 @@ bindNumericSlider(
       `RELEASE AREA ${formatNumber(
         value
       )} m²`
+    );
+  }
+);
+
+bindNumericSlider(
+  sourceVolumeInput,
+  sourceVolumeNumber,
+  (value) => {
+    params.sourceVolume =
+      value;
+
+    updateSourceVisuals();
+    scheduleParticleRebuild();
+
+    setStatus(
+      `SOURCE ${formatNumber(
+        value
+      )} m³`
     );
   }
 );
@@ -6948,11 +6662,11 @@ releaseShapeModeInput.addEventListener(
 
     if (
       params.releaseShapeMode ===
-      "polygon" &&
+        "polygon" &&
       !hasValidCustomPolygon()
     ) {
       setStatus(
-        "DRAW A CUSTOM RELEASE SHAPE"
+        "HOLD CMD AND CLICK TERRAIN TO DRAW"
       );
     } else {
       setStatus(
@@ -6965,7 +6679,9 @@ releaseShapeModeInput.addEventListener(
 drawReleaseShapeButton.addEventListener(
   "click",
   () => {
-    startDrawingReleaseShape();
+    startDrawingReleaseShape(
+      false
+    );
   }
 );
 
@@ -7027,101 +6743,165 @@ particleVisualizationInput.addEventListener(
 
 
 /* =====================================================
-   DRAWING POINTER EVENTS
+   POINTER EVENTS
 ===================================================== */
 
+/*
+  Capture-phase handling is intentional.
+  OrbitControls receives CMD/CTRL + left-click
+  as a pan gesture, so custom drawing must
+  intercept it first.
+*/
 renderer.domElement.addEventListener(
   "pointerdown",
   (event) => {
+    const modifier =
+      hasCommandModifier(
+        event
+      );
+
     if (
-      !drawingReleaseShape
+      drawingReleaseShape
     ) {
+      const allowed =
+        drawingRequiresModifier
+          ? modifier
+          : true;
+
       if (
-        event.button === 0 &&
-        event.shiftKey &&
-        terrainMesh
+        event.button !== 0 ||
+        !allowed
       ) {
-        const hit =
-          getTerrainIntersection(
-            event
-          );
+        return;
+      }
 
-        if (
-          hit
-        ) {
-          sourceLocation.x =
-            hit.x;
+      event.preventDefault();
+      event.stopImmediatePropagation();
 
-          sourceLocation.z =
-            hit.z;
+      const hit =
+        getTerrainIntersection(
+          event
+        );
 
-          stopSimulation(
-            true
-          );
+      if (
+        !hit
+      ) {
+        return;
+      }
 
-          createParticles();
-          updateSourceVisuals();
+      const nextPoint = {
+        x: hit.x,
+        z: hit.z
+      };
 
-          setStatus(
-            "SOURCE MOVED"
-          );
-        }
+      const last =
+        drawingPoints[
+          drawingPoints.length - 1
+        ];
+
+      if (
+        last &&
+        Math.hypot(
+          last.x -
+            nextPoint.x,
+
+          last.z -
+            nextPoint.z
+        ) < 0.5
+      ) {
+        return;
+      }
+
+      drawingPoints.push(
+        nextPoint
+      );
+
+      setDrawingPreview();
+
+      if (
+        event.detail >= 2 &&
+        drawingPoints.length >= 3
+      ) {
+        finishDrawingReleaseShape();
       }
 
       return;
     }
 
-    event.preventDefault();
-
+    /*
+      CMD/Ctrl + left-click automatically starts
+      polygon drawing. No button is required.
+    */
     if (
-      event.button !== 0
+      event.button === 0 &&
+      modifier &&
+      terrainMesh
     ) {
-      return;
-    }
+      event.preventDefault();
+      event.stopImmediatePropagation();
 
-    const hit =
-      getTerrainIntersection(
-        event
+      startDrawingReleaseShape(
+        true
       );
 
-    if (
-      !hit
-    ) {
+      const hit =
+        getTerrainIntersection(
+          event
+        );
+
+      if (
+        hit
+      ) {
+        drawingPoints.push({
+          x: hit.x,
+          z: hit.z
+        });
+
+        setDrawingPreview();
+      }
+
       return;
     }
 
-    const point = {
-      x: hit.x,
-      z: hit.z
-    };
-
-    const last =
-      drawingPoints[
-        drawingPoints.length - 1
-      ];
-
+    /*
+      Shift + left-click moves the source.
+    */
     if (
-      last &&
-      Math.hypot(
-        last.x - point.x,
-        last.z - point.z
-      ) < 0.5
+      event.button === 0 &&
+      event.shiftKey &&
+      terrainMesh
     ) {
-      return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      const hit =
+        getTerrainIntersection(
+          event
+        );
+
+      if (
+        hit
+      ) {
+        sourceLocation.x =
+          hit.x;
+
+        sourceLocation.z =
+          hit.z;
+
+        stopSimulation(
+          true
+        );
+
+        createParticles();
+        updateSourceVisuals();
+
+        setStatus(
+          "SOURCE MOVED"
+        );
+      }
     }
-
-    drawingPoints.push(
-      point
-    );
-
-    setDrawingPreview();
-
-    if (
-      event.detail >= 2
-    ) {
-      finishDrawingReleaseShape();
-    }
-  }
+  },
+  true
 );
 
 renderer.domElement.addEventListener(
@@ -7132,6 +6912,25 @@ renderer.domElement.addEventListener(
     ) {
       return;
     }
+
+    const modifier =
+      hasCommandModifier(
+        event
+      );
+
+    const allowed =
+      drawingRequiresModifier
+        ? modifier
+        : true;
+
+    if (
+      !allowed
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
 
     const hit =
       getTerrainIntersection(
@@ -7145,7 +6944,8 @@ renderer.domElement.addEventListener(
         hit
       );
     }
-  }
+  },
+  true
 );
 
 window.addEventListener(
@@ -7182,7 +6982,6 @@ window.addEventListener(
       event.preventDefault();
 
       drawingPoints.pop();
-
       setDrawingPreview();
     }
   }
@@ -7459,7 +7258,7 @@ setStatus(
 
 
 /* =====================================================
-   ANIMATION
+   ANIMATION LOOP
 ===================================================== */
 
 const clock =
@@ -7485,10 +7284,11 @@ function animate() {
       );
     }
 
+    /*
+      Synchronize before every render,
+      including the first frame after PLAY.
+    */
     if (
-      simulationStarted &&
-      params.particleVisualization ===
-        "points" &&
       particlePoints
     ) {
       syncPointParticles();
