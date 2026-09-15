@@ -131,7 +131,7 @@ const params = {
   directionX: 0,
   directionZ: 1,
 
-  terrainResolution: 256,
+  terrainResolution: 512,
 
   modelScale: 1,
   metersPerModelUnit: 1,
@@ -139,12 +139,12 @@ const params = {
   depthScale: 1,
 
   releaseShapeMode: "rectangle",
-  sourceArea: 3000,
+  sourceArea: 2000,
 
-  sourceVolume: 10000,
+  sourceVolume: 6000,
   particleDensity: 1,
 
-  colorMode: "material",
+  colorMode: "velocity",
   particleSize: 0.01,
 
   rotationX: 0,
@@ -174,7 +174,7 @@ const SURFACE_CLEARANCE = 0.025;
 
 const DEFAULT_IMPORTED_ROTATION_X = -90;
 
-const COHESION_STRENGTH = 5;
+const COHESION_STRENGTH = 3;
 const COHESION_RANGE_MULTIPLIER = 3;
 
 const SETTLE_TIME = 0.65;
