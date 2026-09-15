@@ -158,6 +158,10 @@ const params = {
 
 
 const TERRAIN_SIZE = 600;
+
+const MIN_SOURCE_VOLUME = 1000;
+const MAX_SOURCE_VOLUME = 500000;
+
 const MAX_SIMULATED_PARTICLES = 20000;
 
 const GRAVITY = 9.81;
@@ -174,17 +178,17 @@ const COHESION_STRENGTH = 5;
 const COHESION_RANGE_MULTIPLIER = 3;
 
 const SETTLE_TIME = 0.65;
+
 const CACHE_INTERVAL = 0.20;
 const MAX_CACHE_FRAMES = 120;
 
 const MAX_COLLISION_NEIGHBOURS = 64;
 const MAX_COHESION_NEIGHBOURS = 32;
 
+const INITIAL_PARTICLE_HORIZONTAL_SPACING = 2.04;
+const INITIAL_PARTICLE_VERTICAL_SPACING = 2.04;
 
-/*
-  Approximation of the seaborn/mako sequential palette.
-  It runs from very dark blue-black through blue, teal and pale yellow.
-*/
+
 const MAKO_STOPS = [
   "#0b0405",
   "#151434",
@@ -199,11 +203,14 @@ const MAKO_STOPS = [
   "#f7f4c6"
 ];
 
-const MAKO_COLORS = MAKO_STOPS.map((hex) => new THREE.Color(hex));
+const MAKO_COLORS = MAKO_STOPS.map(
+  (hex) => new THREE.Color(hex)
+);
 
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x030303);
+
 
 const camera = new THREE.PerspectiveCamera(
   45,
@@ -212,7 +219,12 @@ const camera = new THREE.PerspectiveCamera(
   10000
 );
 
-camera.position.set(430, 340, 430);
+camera.position.set(
+  430,
+  340,
+  430
+);
+
 
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
@@ -220,14 +232,22 @@ const renderer = new THREE.WebGLRenderer({
 });
 
 renderer.setPixelRatio(
-  Math.min(window.devicePixelRatio || 1, 2)
+  Math.min(
+    window.devicePixelRatio || 1,
+    2
+  )
 );
 
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace =
+  THREE.SRGBColorSpace;
 
-ui.viewer.appendChild(renderer.domElement);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type =
+  THREE.PCFSoftShadowMap;
+
+ui.viewer.appendChild(
+  renderer.domElement
+);
 
 
 const controls = new OrbitControls(
@@ -242,24 +262,35 @@ controls.maxDistance = 5000;
 controls.target.set(0, 40, 0);
 
 
-const hemisphereLight = new THREE.HemisphereLight(
-  0xd8e6ff,
-  0x202020,
-  1.35
-);
+const hemisphereLight =
+  new THREE.HemisphereLight(
+    0xd8e6ff,
+    0x202020,
+    1.35
+  );
 
 scene.add(hemisphereLight);
 
 
-const sunLight = new THREE.DirectionalLight(
-  0xffffff,
-  2.0
+const sunLight =
+  new THREE.DirectionalLight(
+    0xffffff,
+    2.0
+  );
+
+sunLight.position.set(
+  220,
+  420,
+  160
 );
 
-sunLight.position.set(220, 420, 160);
 sunLight.castShadow = true;
 
-sunLight.shadow.mapSize.set(2048, 2048);
+sunLight.shadow.mapSize.set(
+  2048,
+  2048
+);
+
 sunLight.shadow.camera.left = -500;
 sunLight.shadow.camera.right = 500;
 sunLight.shadow.camera.top = 500;
@@ -268,12 +299,13 @@ sunLight.shadow.camera.bottom = -500;
 scene.add(sunLight);
 
 
-const terrainMaterial = new THREE.MeshStandardMaterial({
-  color: 0x777c78,
-  roughness: 0.94,
-  metalness: 0.02,
-  side: THREE.DoubleSide
-});
+const terrainMaterial =
+  new THREE.MeshStandardMaterial({
+    color: 0x777c78,
+    roughness: 0.94,
+    metalness: 0.02,
+    side: THREE.DoubleSide
+  });
 
 
 const sourceGroup = new THREE.Group();
@@ -320,14 +352,20 @@ const pointer = new THREE.Vector2();
 
 
 function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
+  return Math.max(
+    min,
+    Math.min(max, value)
+  );
 }
 
 
 function formatNumber(value) {
-  return new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 3
-  }).format(value);
+  return new Intl.NumberFormat(
+    "en-US",
+    {
+      maximumFractionDigits: 3
+    }
+  ).format(value);
 }
 
 
@@ -341,7 +379,11 @@ function setStatus(text) {
 }
 
 
-function setSliderAndNumber(rangeElement, numberElement, value) {
+function setSliderAndNumber(
+  rangeElement,
+  numberElement,
+  value
+) {
   rangeElement.value = String(value);
   numberElement.value = String(value);
 }
@@ -370,33 +412,51 @@ function bindRangeAndNumber(
       max
     );
 
-    rangeElement.value = String(params[parameterName]);
-    numberElement.value = String(params[parameterName]);
+    rangeElement.value =
+      String(params[parameterName]);
+
+    numberElement.value =
+      String(params[parameterName]);
 
     onInput(params[parameterName]);
   };
 
-  rangeElement.addEventListener("input", () => {
-    update(rangeElement.value);
-  });
+  rangeElement.addEventListener(
+    "input",
+    () => {
+      update(rangeElement.value);
+    }
+  );
 
-  numberElement.addEventListener("input", () => {
-    update(numberElement.value);
-  });
+  numberElement.addEventListener(
+    "input",
+    () => {
+      update(numberElement.value);
+    }
+  );
 
-  rangeElement.addEventListener("change", () => {
-    onCommit(params[parameterName]);
-  });
+  rangeElement.addEventListener(
+    "change",
+    () => {
+      onCommit(params[parameterName]);
+    }
+  );
 
-  numberElement.addEventListener("change", () => {
-    onCommit(params[parameterName]);
-  });
+  numberElement.addEventListener(
+    "change",
+    () => {
+      onCommit(params[parameterName]);
+    }
+  );
 }
 
 
 function requestParticleReset() {
   if (params.running) {
-    setStatus("RESET REQUIRED FOR NEW PARAMETERS");
+    setStatus(
+      "RESET REQUIRED FOR NEW PARAMETERS"
+    );
+
     return;
   }
 
@@ -408,11 +468,26 @@ function requestParticleReset() {
 }
 
 
-function updateParticleReadout() {
-  const requested = Math.max(
-    1,
-    Math.round(params.sourceVolume * params.particleDensity)
+function requestedParticleCount() {
+  const safeVolume = clamp(
+    params.sourceVolume,
+    MIN_SOURCE_VOLUME,
+    MAX_SOURCE_VOLUME
   );
+
+  return Math.max(
+    1,
+    Math.round(
+      safeVolume *
+      params.particleDensity
+    )
+  );
+}
+
+
+function updateParticleReadout() {
+  const requested =
+    requestedParticleCount();
 
   const simulated = Math.min(
     requested,
@@ -431,14 +506,16 @@ function updateParticleReadout() {
 
 
 function updateDirectionVisibility() {
-  const mode = params.startDirectionMode;
+  const mode =
+    params.startDirectionMode;
 
   ui.fixedDirectionControl.classList.toggle(
     "hidden",
     mode !== "fixed"
   );
 
-  const userVectorVisible = mode === "vector";
+  const userVectorVisible =
+    mode === "vector";
 
   ui.userDirectionXControl.classList.toggle(
     "hidden",
@@ -453,7 +530,8 @@ function updateDirectionVisibility() {
 
 
 function updateShapeVisibility() {
-  const isPolygon = params.releaseShapeMode === "polygon";
+  const isPolygon =
+    params.releaseShapeMode === "polygon";
 
   ui.rectangleAreaControl.classList.toggle(
     "hidden",
@@ -465,7 +543,10 @@ function updateShapeVisibility() {
     !isPolygon
   );
 
-  if (isPolygon && !source.customPolygonLocal) {
+  if (
+    isPolygon &&
+    !source.customPolygonLocal
+  ) {
     ui.releaseAreaReadout.textContent =
       "NO CUSTOM SHAPE";
   }
@@ -473,7 +554,7 @@ function updateShapeVisibility() {
 
 
 /* ------------------------------------------------------------------------- */
-/* Noise and alpine terrain                                                  */
+/* Terrain                                                                   */
 /* ------------------------------------------------------------------------- */
 
 function fract(value) {
@@ -507,10 +588,23 @@ function valueNoise(x, z) {
   const c = hash2(x0, z0 + 1);
   const d = hash2(x0 + 1, z0 + 1);
 
-  const ab = THREE.MathUtils.lerp(a, b, sx);
-  const cd = THREE.MathUtils.lerp(c, d, sx);
+  const ab = THREE.MathUtils.lerp(
+    a,
+    b,
+    sx
+  );
 
-  return THREE.MathUtils.lerp(ab, cd, sz);
+  const cd = THREE.MathUtils.lerp(
+    c,
+    d,
+    sx
+  );
+
+  return THREE.MathUtils.lerp(
+    ab,
+    cd,
+    sz
+  );
 }
 
 
@@ -535,15 +629,32 @@ function fbm(x, z, octaves = 5) {
 }
 
 
-function alpineHeight(x, z, sizeX, sizeZ) {
+function alpineHeight(
+  x,
+  z,
+  sizeX,
+  sizeZ
+) {
   const nx = x / sizeX;
   const nz = z / sizeZ;
 
   const warpX =
-    (fbm(nx * 7 + 4.1, nz * 7 - 1.7, 4) - 0.5) * 0.075;
+    (
+      fbm(
+        nx * 7 + 4.1,
+        nz * 7 - 1.7,
+        4
+      ) - 0.5
+    ) * 0.075;
 
   const warpZ =
-    (fbm(nx * 7 - 3.5, nz * 7 + 2.4, 4) - 0.5) * 0.075;
+    (
+      fbm(
+        nx * 7 - 3.5,
+        nz * 7 + 2.4,
+        4
+      ) - 0.5
+    ) * 0.075;
 
   const warpedX = nx + warpX;
   const warpedZ = nz + warpZ;
@@ -552,15 +663,20 @@ function alpineHeight(x, z, sizeX, sizeZ) {
     0.035 * Math.sin(warpedX * 18) +
     0.018 * Math.sin(warpedX * 43);
 
-  const ridgeDistance = warpedZ - ridgeLine;
+  const ridgeDistance =
+    warpedZ - ridgeLine;
 
   const mainRidge = Math.exp(
-    -Math.pow(ridgeDistance / 0.22, 2)
+    -Math.pow(
+      ridgeDistance / 0.22,
+      2
+    )
   );
 
   const ridgeVariation =
     0.58 +
-    0.42 * fbm(
+    0.42 *
+    fbm(
       warpedX * 5.5 + 9,
       warpedZ * 5.5 - 4,
       5
@@ -570,7 +686,11 @@ function alpineHeight(x, z, sizeX, sizeZ) {
     0.40 *
     Math.exp(
       -Math.pow(
-        (warpedZ + 0.26 + 0.04 * Math.sin(warpedX * 12)) / 0.15,
+        (
+          warpedZ +
+          0.26 +
+          0.04 * Math.sin(warpedX * 12)
+        ) / 0.15,
         2
       )
     );
@@ -596,7 +716,9 @@ function alpineHeight(x, z, sizeX, sizeZ) {
 
   let height =
     20 +
-    168 * mainRidge * ridgeVariation +
+    168 *
+      mainRidge *
+      ridgeVariation +
     62 * secondaryRidge +
     34 * alpineNoise +
     12 * gullies;
@@ -609,7 +731,15 @@ function alpineHeight(x, z, sizeX, sizeZ) {
         2
       )
     ) *
-    (0.35 + 0.65 * fbm(warpedX * 5, warpedZ * 5, 4));
+    (
+      0.35 +
+      0.65 *
+      fbm(
+        warpedX * 5,
+        warpedZ * 5,
+        4
+      )
+    );
 
   return Math.max(0, height);
 }
@@ -623,46 +753,74 @@ function limitGridSlopes(
   maximumSlopeDegrees = 45
 ) {
   const maxSlope = Math.tan(
-    THREE.MathUtils.degToRad(maximumSlopeDegrees)
+    THREE.MathUtils.degToRad(
+      maximumSlopeDegrees
+    )
   );
 
   const maxXDifference =
-    maxSlope * sizeX / (resolution - 1);
+    maxSlope *
+    sizeX /
+    (resolution - 1);
 
   const maxZDifference =
-    maxSlope * sizeZ / (resolution - 1);
+    maxSlope *
+    sizeZ /
+    (resolution - 1);
 
   for (let pass = 0; pass < 5; pass++) {
     for (let z = 0; z < resolution; z++) {
       for (let x = 0; x < resolution; x++) {
-        const index = z * resolution + x;
-        const current = heights[index];
+        const index =
+          z * resolution + x;
 
         if (x < resolution - 1) {
-          const neighbourIndex = z * resolution + x + 1;
-          const neighbour = heights[neighbourIndex];
+          const neighbourIndex =
+            z * resolution + x + 1;
 
-          if (current > neighbour + maxXDifference) {
-            heights[index] = neighbour + maxXDifference;
+          if (
+            heights[index] >
+            heights[neighbourIndex] +
+            maxXDifference
+          ) {
+            heights[index] =
+              heights[neighbourIndex] +
+              maxXDifference;
           }
 
-          if (heights[neighbourIndex] > heights[index] + maxXDifference) {
+          if (
+            heights[neighbourIndex] >
+            heights[index] +
+            maxXDifference
+          ) {
             heights[neighbourIndex] =
-              heights[index] + maxXDifference;
+              heights[index] +
+              maxXDifference;
           }
         }
 
         if (z < resolution - 1) {
-          const neighbourIndex = (z + 1) * resolution + x;
-          const neighbour = heights[neighbourIndex];
+          const neighbourIndex =
+            (z + 1) * resolution + x;
 
-          if (heights[index] > neighbour + maxZDifference) {
-            heights[index] = neighbour + maxZDifference;
+          if (
+            heights[index] >
+            heights[neighbourIndex] +
+            maxZDifference
+          ) {
+            heights[index] =
+              heights[neighbourIndex] +
+              maxZDifference;
           }
 
-          if (heights[neighbourIndex] > heights[index] + maxZDifference) {
+          if (
+            heights[neighbourIndex] >
+            heights[index] +
+            maxZDifference
+          ) {
             heights[neighbourIndex] =
-              heights[index] + maxZDifference;
+              heights[index] +
+              maxZDifference;
           }
         }
       }
@@ -677,15 +835,24 @@ function buildTerrainGeometry(
   sizeX,
   sizeZ
 ) {
-  const vertexCount = resolution * resolution;
-  const positions = new Float32Array(vertexCount * 3);
+  const vertexCount =
+    resolution * resolution;
+
+  const positions =
+    new Float32Array(
+      vertexCount * 3
+    );
 
   for (let z = 0; z < resolution; z++) {
-    const nz = z / (resolution - 1);
+    const nz =
+      z / (resolution - 1);
 
     for (let x = 0; x < resolution; x++) {
-      const nx = x / (resolution - 1);
-      const index = z * resolution + x;
+      const nx =
+        x / (resolution - 1);
+
+      const index =
+        z * resolution + x;
 
       positions[index * 3] =
         (nx - 0.5) * sizeX;
@@ -699,14 +866,22 @@ function buildTerrainGeometry(
   }
 
   const triangleCount =
-    (resolution - 1) * (resolution - 1) * 2;
+    (resolution - 1) *
+    (resolution - 1) *
+    2;
 
-  const indices = new Uint32Array(triangleCount * 3);
+  const indices =
+    new Uint32Array(
+      triangleCount * 3
+    );
+
   let pointer = 0;
 
   for (let z = 0; z < resolution - 1; z++) {
     for (let x = 0; x < resolution - 1; x++) {
-      const a = z * resolution + x;
+      const a =
+        z * resolution + x;
+
       const b = a + 1;
       const c = a + resolution;
       const d = c + 1;
@@ -721,15 +896,22 @@ function buildTerrainGeometry(
     }
   }
 
-  const geometry = new THREE.BufferGeometry();
+  const geometry =
+    new THREE.BufferGeometry();
 
   geometry.setAttribute(
     "position",
-    new THREE.BufferAttribute(positions, 3)
+    new THREE.BufferAttribute(
+      positions,
+      3
+    )
   );
 
   geometry.setIndex(
-    new THREE.BufferAttribute(indices, 1)
+    new THREE.BufferAttribute(
+      indices,
+      1
+    )
   );
 
   geometry.computeVertexNormals();
@@ -752,17 +934,19 @@ function setTerrain(
     terrainMesh.geometry.dispose();
   }
 
-  const geometry = buildTerrainGeometry(
-    heights,
-    resolution,
-    sizeX,
-    sizeZ
-  );
+  const geometry =
+    buildTerrainGeometry(
+      heights,
+      resolution,
+      sizeX,
+      sizeZ
+    );
 
-  terrainMesh = new THREE.Mesh(
-    geometry,
-    terrainMaterial
-  );
+  terrainMesh =
+    new THREE.Mesh(
+      geometry,
+      terrainMaterial
+    );
 
   terrainMesh.receiveShadow = true;
   terrainMesh.castShadow = false;
@@ -773,8 +957,15 @@ function setTerrain(
   let maximum = -Infinity;
 
   for (const height of heights) {
-    minimum = Math.min(minimum, height);
-    maximum = Math.max(maximum, height);
+    minimum = Math.min(
+      minimum,
+      height
+    );
+
+    maximum = Math.max(
+      maximum,
+      height
+    );
   }
 
   terrainState = {
@@ -793,31 +984,43 @@ function setTerrain(
 
 
 function buildProceduralTerrain() {
-  const resolution = clamp(
-    Math.round(params.terrainResolution),
-    64,
-    768
-  );
+  const resolution =
+    clamp(
+      Math.round(params.terrainResolution),
+      64,
+      768
+    );
 
-  const sizeX = TERRAIN_SIZE * params.modelScale;
+  const sizeX =
+    TERRAIN_SIZE *
+    params.modelScale;
+
   const sizeZ =
     TERRAIN_SIZE *
     params.modelScale *
     params.depthScale;
 
-  const heights = new Float32Array(
-    resolution * resolution
-  );
+  const heights =
+    new Float32Array(
+      resolution * resolution
+    );
 
   for (let z = 0; z < resolution; z++) {
-    const nz = z / (resolution - 1);
-    const worldZ = (nz - 0.5) * sizeZ;
+    const nz =
+      z / (resolution - 1);
+
+    const worldZ =
+      (nz - 0.5) * sizeZ;
 
     for (let x = 0; x < resolution; x++) {
-      const nx = x / (resolution - 1);
-      const worldX = (nx - 0.5) * sizeX;
+      const nx =
+        x / (resolution - 1);
 
-      const index = z * resolution + x;
+      const worldX =
+        (nx - 0.5) * sizeX;
+
+      const index =
+        z * resolution + x;
 
       heights[index] =
         alpineHeight(
@@ -854,22 +1057,42 @@ function extractPointsFromObject(object) {
   object.updateMatrixWorld(true);
 
   object.traverse((child) => {
-    if (!child.isMesh || !child.geometry) {
+    if (
+      !child.isMesh ||
+      !child.geometry
+    ) {
       return;
     }
 
-    const position = child.geometry.getAttribute("position");
+    const position =
+      child.geometry.getAttribute(
+        "position"
+      );
 
     if (!position) {
       return;
     }
 
-    const vertex = new THREE.Vector3();
+    const vertex =
+      new THREE.Vector3();
 
-    for (let i = 0; i < position.count; i++) {
-      vertex.fromBufferAttribute(position, i);
-      vertex.applyMatrix4(child.matrixWorld);
-      points.push(vertex.clone());
+    for (
+      let i = 0;
+      i < position.count;
+      i++
+    ) {
+      vertex.fromBufferAttribute(
+        position,
+        i
+      );
+
+      vertex.applyMatrix4(
+        child.matrixWorld
+      );
+
+      points.push(
+        vertex.clone()
+      );
     }
   });
 
@@ -878,67 +1101,108 @@ function extractPointsFromObject(object) {
 
 
 function buildImportedTerrain() {
-  if (!importedRawPoints || importedRawPoints.length < 3) {
+  if (
+    !importedRawPoints ||
+    importedRawPoints.length < 3
+  ) {
     buildProceduralTerrain();
     return;
   }
 
-  const resolution = clamp(
-    Math.round(params.terrainResolution),
-    64,
-    768
-  );
+  const resolution =
+    clamp(
+      Math.round(params.terrainResolution),
+      64,
+      768
+    );
 
-  const rotation = new THREE.Euler(
-    THREE.MathUtils.degToRad(
-      DEFAULT_IMPORTED_ROTATION_X + params.rotationX
-    ),
-    THREE.MathUtils.degToRad(params.rotationY),
-    THREE.MathUtils.degToRad(params.rotationZ),
-    "XYZ"
-  );
+  const rotation =
+    new THREE.Euler(
+      THREE.MathUtils.degToRad(
+        DEFAULT_IMPORTED_ROTATION_X +
+        params.rotationX
+      ),
+      THREE.MathUtils.degToRad(
+        params.rotationY
+      ),
+      THREE.MathUtils.degToRad(
+        params.rotationZ
+      ),
+      "XYZ"
+    );
 
-  const transformed = importedRawPoints.map((point) => {
-    return point.clone().applyEuler(rotation);
-  });
+  const transformed =
+    importedRawPoints.map((point) => {
+      return point
+        .clone()
+        .applyEuler(rotation);
+    });
 
-  const bounds = new THREE.Box3().setFromPoints(transformed);
-  const rawSize = bounds.getSize(new THREE.Vector3());
+  const bounds =
+    new THREE.Box3()
+      .setFromPoints(transformed);
 
-  const spanX = Math.max(rawSize.x, 0.0001);
-  const spanZ = Math.max(rawSize.z, 0.0001);
+  const rawSize =
+    bounds.getSize(
+      new THREE.Vector3()
+    );
 
-  const sizeX = TERRAIN_SIZE * params.modelScale;
+  const spanX =
+    Math.max(rawSize.x, 0.0001);
+
+  const spanZ =
+    Math.max(rawSize.z, 0.0001);
+
+  const sizeX =
+    TERRAIN_SIZE *
+    params.modelScale;
+
   const sizeZ =
     TERRAIN_SIZE *
     params.modelScale *
     params.depthScale;
 
-  const sampled = new Float32Array(
-    resolution * resolution
-  );
+  const sampled =
+    new Float32Array(
+      resolution * resolution
+    );
 
   sampled.fill(NaN);
 
   for (const point of transformed) {
-    const nx = clamp(
-      (point.x - bounds.min.x) / spanX,
-      0,
-      1
-    );
+    const nx =
+      clamp(
+        (point.x - bounds.min.x) /
+          spanX,
+        0,
+        1
+      );
 
-    const nz = clamp(
-      (point.z - bounds.min.z) / spanZ,
-      0,
-      1
-    );
+    const nz =
+      clamp(
+        (point.z - bounds.min.z) /
+          spanZ,
+        0,
+        1
+      );
 
-    const x = Math.round(nx * (resolution - 1));
-    const z = Math.round(nz * (resolution - 1));
-    const index = z * resolution + x;
+    const x =
+      Math.round(
+        nx * (resolution - 1)
+      );
+
+    const z =
+      Math.round(
+        nz * (resolution - 1)
+      );
+
+    const index =
+      z * resolution + x;
 
     if (
-      !Number.isFinite(sampled[index]) ||
+      !Number.isFinite(
+        sampled[index]
+      ) ||
       point.y > sampled[index]
     ) {
       sampled[index] = point.y;
@@ -949,7 +1213,11 @@ function buildImportedTerrain() {
 
   for (const value of sampled) {
     if (Number.isFinite(value)) {
-      minimumY = Math.min(minimumY, value);
+      minimumY =
+        Math.min(
+          minimumY,
+          value
+        );
     }
   }
 
@@ -960,9 +1228,14 @@ function buildImportedTerrain() {
   for (let pass = 0; pass < 10; pass++) {
     for (let z = 0; z < resolution; z++) {
       for (let x = 0; x < resolution; x++) {
-        const index = z * resolution + x;
+        const index =
+          z * resolution + x;
 
-        if (Number.isFinite(sampled[index])) {
+        if (
+          Number.isFinite(
+            sampled[index]
+          )
+        ) {
           continue;
         }
 
@@ -984,9 +1257,15 @@ function buildImportedTerrain() {
             }
 
             const neighbour =
-              sampled[nz * resolution + nx];
+              sampled[
+                nz * resolution + nx
+              ];
 
-            if (Number.isFinite(neighbour)) {
+            if (
+              Number.isFinite(
+                neighbour
+              )
+            ) {
               total += neighbour;
               count++;
             }
@@ -994,19 +1273,26 @@ function buildImportedTerrain() {
         }
 
         if (count > 0) {
-          sampled[index] = total / count;
+          sampled[index] =
+            total / count;
         }
       }
     }
   }
 
   for (let i = 0; i < sampled.length; i++) {
-    if (!Number.isFinite(sampled[i])) {
+    if (
+      !Number.isFinite(
+        sampled[i]
+      )
+    ) {
       sampled[i] = minimumY;
     }
 
     sampled[i] =
-      (sampled[i] - minimumY) *
+      (
+        sampled[i] - minimumY
+      ) *
       params.metersPerModelUnit *
       params.verticalExaggeration *
       params.modelScale;
@@ -1032,40 +1318,63 @@ function buildCurrentTerrain() {
 
 
 function fitCameraToTerrain() {
-  if (!terrainMesh || !terrainMesh.geometry.boundingBox) {
+  if (
+    !terrainMesh ||
+    !terrainMesh.geometry.boundingBox
+  ) {
     return;
   }
 
-  const box = terrainMesh.geometry.boundingBox;
-  const size = box.getSize(new THREE.Vector3());
-  const center = box.getCenter(new THREE.Vector3());
+  const box =
+    terrainMesh.geometry.boundingBox;
 
-  const maximumDimension = Math.max(
-    size.x,
-    size.y,
-    size.z
-  );
+  const size =
+    box.getSize(
+      new THREE.Vector3()
+    );
 
-  camera.near = Math.max(
-    0.1,
-    maximumDimension / 10000
-  );
+  const center =
+    box.getCenter(
+      new THREE.Vector3()
+    );
 
-  camera.far = Math.max(
-    10000,
-    maximumDimension * 20
-  );
+  const maximumDimension =
+    Math.max(
+      size.x,
+      size.y,
+      size.z
+    );
+
+  camera.near =
+    Math.max(
+      0.1,
+      maximumDimension / 10000
+    );
+
+  camera.far =
+    Math.max(
+      10000,
+      maximumDimension * 20
+    );
 
   camera.updateProjectionMatrix();
 
   camera.position.set(
-    center.x + maximumDimension * 0.72,
-    center.y + maximumDimension * 0.62,
-    center.z + maximumDimension * 0.72
+    center.x +
+      maximumDimension * 0.72,
+
+    center.y +
+      maximumDimension * 0.62,
+
+    center.z +
+      maximumDimension * 0.72
   );
 
   controls.target.copy(center);
-  controls.target.y += maximumDimension * 0.08;
+
+  controls.target.y +=
+    maximumDimension * 0.08;
+
   controls.update();
 }
 
@@ -1082,93 +1391,150 @@ function terrainHeightAt(x, z) {
     sizeZ
   } = terrainState;
 
-  const nx = clamp(
-    (x / sizeX) + 0.5,
-    0,
-    1
+  const nx =
+    clamp(
+      x / sizeX + 0.5,
+      0,
+      1
+    );
+
+  const nz =
+    clamp(
+      z / sizeZ + 0.5,
+      0,
+      1
+    );
+
+  const gx =
+    nx * (resolution - 1);
+
+  const gz =
+    nz * (resolution - 1);
+
+  const x0 =
+    Math.floor(gx);
+
+  const z0 =
+    Math.floor(gz);
+
+  const x1 =
+    Math.min(
+      x0 + 1,
+      resolution - 1
+    );
+
+  const z1 =
+    Math.min(
+      z0 + 1,
+      resolution - 1
+    );
+
+  const tx =
+    gx - x0;
+
+  const tz =
+    gz - z0;
+
+  const h00 =
+    heights[z0 * resolution + x0];
+
+  const h10 =
+    heights[z0 * resolution + x1];
+
+  const h01 =
+    heights[z1 * resolution + x0];
+
+  const h11 =
+    heights[z1 * resolution + x1];
+
+  const h0 =
+    THREE.MathUtils.lerp(
+      h00,
+      h10,
+      tx
+    );
+
+  const h1 =
+    THREE.MathUtils.lerp(
+      h01,
+      h11,
+      tx
+    );
+
+  return THREE.MathUtils.lerp(
+    h0,
+    h1,
+    tz
   );
-
-  const nz = clamp(
-    (z / sizeZ) + 0.5,
-    0,
-    1
-  );
-
-  const gx = nx * (resolution - 1);
-  const gz = nz * (resolution - 1);
-
-  const x0 = Math.floor(gx);
-  const z0 = Math.floor(gz);
-
-  const x1 = Math.min(x0 + 1, resolution - 1);
-  const z1 = Math.min(z0 + 1, resolution - 1);
-
-  const tx = gx - x0;
-  const tz = gz - z0;
-
-  const h00 = heights[z0 * resolution + x0];
-  const h10 = heights[z0 * resolution + x1];
-  const h01 = heights[z1 * resolution + x0];
-  const h11 = heights[z1 * resolution + x1];
-
-  const h0 = THREE.MathUtils.lerp(h00, h10, tx);
-  const h1 = THREE.MathUtils.lerp(h01, h11, tx);
-
-  return THREE.MathUtils.lerp(h0, h1, tz);
 }
 
 
 function terrainNormalAt(x, z) {
-  const sampleDistance = Math.max(
-    0.2,
-    Math.min(
-      terrainState.sizeX,
-      terrainState.sizeZ
-    ) / terrainState.resolution
-  );
+  const sampleDistance =
+    Math.max(
+      0.2,
+      Math.min(
+        terrainState.sizeX,
+        terrainState.sizeZ
+      ) /
+        terrainState.resolution
+    );
 
-  const hLeft = terrainHeightAt(
-    x - sampleDistance,
-    z
-  );
+  const hLeft =
+    terrainHeightAt(
+      x - sampleDistance,
+      z
+    );
 
-  const hRight = terrainHeightAt(
-    x + sampleDistance,
-    z
-  );
+  const hRight =
+    terrainHeightAt(
+      x + sampleDistance,
+      z
+    );
 
-  const hBack = terrainHeightAt(
-    x,
-    z - sampleDistance
-  );
+  const hBack =
+    terrainHeightAt(
+      x,
+      z - sampleDistance
+    );
 
-  const hForward = terrainHeightAt(
-    x,
-    z + sampleDistance
-  );
+  const hForward =
+    terrainHeightAt(
+      x,
+      z + sampleDistance
+    );
 
-  const normal = new THREE.Vector3(
-    -(hRight - hLeft) / (2 * sampleDistance),
+  return new THREE.Vector3(
+    -(hRight - hLeft) /
+      (2 * sampleDistance),
+
     1,
-    -(hForward - hBack) / (2 * sampleDistance)
-  );
 
-  return normal.normalize();
+    -(hForward - hBack) /
+      (2 * sampleDistance)
+  ).normalize();
 }
 
 
 /* ------------------------------------------------------------------------- */
-/* Polygon source geometry                                                    */
+/* Polygon geometry                                                          */
 /* ------------------------------------------------------------------------- */
 
 function signedPolygonArea(points) {
   let area = 0;
 
-  for (let i = 0; i < points.length; i++) {
+  for (
+    let i = 0;
+    i < points.length;
+    i++
+  ) {
     const a = points[i];
-    const b = points[(i + 1) % points.length];
+    const b =
+      points[(i + 1) % points.length];
 
-    area += a.x * b.y - b.x * a.y;
+    area +=
+      a.x * b.y -
+      b.x * a.y;
   }
 
   return area * 0.5;
@@ -1176,32 +1542,55 @@ function signedPolygonArea(points) {
 
 
 function absolutePolygonArea(points) {
-  return Math.abs(signedPolygonArea(points));
+  return Math.abs(
+    signedPolygonArea(points)
+  );
 }
 
 
 function polygonCentroid(points) {
-  const signedArea = signedPolygonArea(points);
+  const signedArea =
+    signedPolygonArea(points);
 
-  if (Math.abs(signedArea) < 0.000001) {
-    const average = new THREE.Vector2();
+  if (
+    Math.abs(signedArea) <
+    0.000001
+  ) {
+    const average =
+      new THREE.Vector2();
 
     for (const point of points) {
       average.add(point);
     }
 
-    return average.multiplyScalar(1 / points.length);
+    return average.multiplyScalar(
+      1 / points.length
+    );
   }
 
-  const centroid = new THREE.Vector2();
+  const centroid =
+    new THREE.Vector2();
 
-  for (let i = 0; i < points.length; i++) {
+  for (
+    let i = 0;
+    i < points.length;
+    i++
+  ) {
     const a = points[i];
-    const b = points[(i + 1) % points.length];
-    const factor = a.x * b.y - b.x * a.y;
+    const b =
+      points[(i + 1) % points.length];
 
-    centroid.x += (a.x + b.x) * factor;
-    centroid.y += (a.y + b.y) * factor;
+    const factor =
+      a.x * b.y -
+      b.x * a.y;
+
+    centroid.x +=
+      (a.x + b.x) *
+      factor;
+
+    centroid.y +=
+      (a.y + b.y) *
+      factor;
   }
 
   return centroid.multiplyScalar(
@@ -1214,7 +1603,8 @@ function pointInPolygon(point, polygon) {
   let inside = false;
 
   for (
-    let i = 0, j = polygon.length - 1;
+    let i = 0,
+    j = polygon.length - 1;
     i < polygon.length;
     j = i++
   ) {
@@ -1222,9 +1612,13 @@ function pointInPolygon(point, polygon) {
     const b = polygon[j];
 
     const intersects =
-      (a.y > point.y) !== (b.y > point.y) &&
+      (a.y > point.y) !==
+        (b.y > point.y) &&
       point.x <
-        ((b.x - a.x) * (point.y - a.y)) /
+        (
+          (b.x - a.x) *
+            (point.y - a.y)
+        ) /
           (b.y - a.y) +
           a.x;
 
@@ -1239,10 +1633,15 @@ function pointInPolygon(point, polygon) {
 
 function orientation(a, b, c) {
   const value =
-    (b.y - a.y) * (c.x - b.x) -
-    (b.x - a.x) * (c.y - b.y);
+    (b.y - a.y) *
+      (c.x - b.x) -
+    (b.x - a.x) *
+      (c.y - b.y);
 
-  if (Math.abs(value) < 0.000001) {
+  if (
+    Math.abs(value) <
+    0.000001
+  ) {
     return 0;
   }
 
@@ -1252,37 +1651,72 @@ function orientation(a, b, c) {
 
 function onSegment(a, b, c) {
   return (
-    b.x <= Math.max(a.x, c.x) + 0.000001 &&
-    b.x >= Math.min(a.x, c.x) - 0.000001 &&
-    b.y <= Math.max(a.y, c.y) + 0.000001 &&
-    b.y >= Math.min(a.y, c.y) - 0.000001
+    b.x <=
+      Math.max(a.x, c.x) +
+        0.000001 &&
+    b.x >=
+      Math.min(a.x, c.x) -
+        0.000001 &&
+    b.y <=
+      Math.max(a.y, c.y) +
+        0.000001 &&
+    b.y >=
+      Math.min(a.y, c.y) -
+        0.000001
   );
 }
 
 
-function segmentsIntersect(p1, q1, p2, q2) {
-  const o1 = orientation(p1, q1, p2);
-  const o2 = orientation(p1, q1, q2);
-  const o3 = orientation(p2, q2, p1);
-  const o4 = orientation(p2, q2, q1);
+function segmentsIntersect(
+  p1,
+  q1,
+  p2,
+  q2
+) {
+  const o1 =
+    orientation(p1, q1, p2);
 
-  if (o1 !== o2 && o3 !== o4) {
+  const o2 =
+    orientation(p1, q1, q2);
+
+  const o3 =
+    orientation(p2, q2, p1);
+
+  const o4 =
+    orientation(p2, q2, q1);
+
+  if (
+    o1 !== o2 &&
+    o3 !== o4
+  ) {
     return true;
   }
 
-  if (o1 === 0 && onSegment(p1, p2, q1)) {
+  if (
+    o1 === 0 &&
+    onSegment(p1, p2, q1)
+  ) {
     return true;
   }
 
-  if (o2 === 0 && onSegment(p1, q2, q1)) {
+  if (
+    o2 === 0 &&
+    onSegment(p1, q2, q1)
+  ) {
     return true;
   }
 
-  if (o3 === 0 && onSegment(p2, p1, q2)) {
+  if (
+    o3 === 0 &&
+    onSegment(p2, p1, q2)
+  ) {
     return true;
   }
 
-  if (o4 === 0 && onSegment(p2, q1, q2)) {
+  if (
+    o4 === 0 &&
+    onSegment(p2, q1, q2)
+  ) {
     return true;
   }
 
@@ -1295,11 +1729,17 @@ function polygonSelfIntersects(points) {
 
   for (let i = 0; i < count; i++) {
     const a1 = points[i];
-    const a2 = points[(i + 1) % count];
+    const a2 =
+      points[(i + 1) % count];
 
-    for (let j = i + 1; j < count; j++) {
+    for (
+      let j = i + 1;
+      j < count;
+      j++
+    ) {
       const b1 = points[j];
-      const b2 = points[(j + 1) % count];
+      const b2 =
+        points[(j + 1) % count];
 
       const adjacent =
         i === j ||
@@ -1310,7 +1750,14 @@ function polygonSelfIntersects(points) {
         continue;
       }
 
-      if (segmentsIntersect(a1, a2, b1, b2)) {
+      if (
+        segmentsIntersect(
+          a1,
+          a2,
+          b1,
+          b2
+        )
+      ) {
         return true;
       }
     }
@@ -1325,33 +1772,43 @@ function getSourcePolygonWorld() {
     source.customPolygonLocal &&
     source.customPolygonLocal.length >= 3
   ) {
-    return source.customPolygonLocal.map((point) => {
-      return new THREE.Vector2(
-        source.center.x + point.x,
-        source.center.y + point.y
-      );
-    });
+    return source.customPolygonLocal.map(
+      (point) => {
+        return new THREE.Vector2(
+          source.center.x + point.x,
+          source.center.y + point.y
+        );
+      }
+    );
   }
 
-  const side = Math.sqrt(
-    Math.max(params.sourceArea, 0.01)
-  );
+  const side =
+    Math.sqrt(
+      Math.max(
+        params.sourceArea,
+        0.01
+      )
+    );
 
-  const half = side * 0.5;
+  const half =
+    side * 0.5;
 
   return [
     new THREE.Vector2(
       source.center.x - half,
       source.center.y - half
     ),
+
     new THREE.Vector2(
       source.center.x + half,
       source.center.y - half
     ),
+
     new THREE.Vector2(
       source.center.x + half,
       source.center.y + half
     ),
+
     new THREE.Vector2(
       source.center.x - half,
       source.center.y + half
@@ -1368,25 +1825,72 @@ function getSourceArea() {
     return source.customArea;
   }
 
-  return Math.max(params.sourceArea, 0.01);
+  return Math.max(
+    params.sourceArea,
+    0.01
+  );
 }
 
 
-function createLineObject(points, material, loop = false) {
-  const vertices = points.map((point) => {
-    return new THREE.Vector3(
-      point.x,
-      point.y,
-      point.z
-    );
-  });
+function getNominalSourceHeight() {
+  return (
+    params.sourceVolume /
+    Math.max(
+      getSourceArea(),
+      0.01
+    )
+  );
+}
 
-  if (loop && vertices.length > 0) {
-    vertices.push(vertices[0].clone());
+
+/*
+  The nominal volume height is sourceVolume / area.
+
+  If one or more discrete particles are physically larger than
+  that height, the wireframe is padded to show the complete initial
+  particle envelope. The represented physical source volume remains
+  sourceVolume; this is only a visual envelope correction.
+*/
+function getSourceDisplayHeight() {
+  const nominalHeight =
+    getNominalSourceHeight();
+
+  const initialStackHeight =
+    particles?.initialStackHeight || 0;
+
+  return Math.max(
+    nominalHeight,
+    initialStackHeight
+  );
+}
+
+
+function createLineObject(
+  points,
+  material,
+  loop = false
+) {
+  const vertices =
+    points.map((point) => {
+      return new THREE.Vector3(
+        point.x,
+        point.y,
+        point.z
+      );
+    });
+
+  if (
+    loop &&
+    vertices.length > 0
+  ) {
+    vertices.push(
+      vertices[0].clone()
+    );
   }
 
-  const geometry = new THREE.BufferGeometry()
-    .setFromPoints(vertices);
+  const geometry =
+    new THREE.BufferGeometry()
+      .setFromPoints(vertices);
 
   return new THREE.Line(
     geometry,
@@ -1396,142 +1900,204 @@ function createLineObject(points, material, loop = false) {
 
 
 function updateSourceVisuals() {
-  const polygon = getSourcePolygonWorld();
+  const polygon =
+    getSourcePolygonWorld();
 
-  if (polygon.length < 3 || !terrainState) {
+  if (
+    polygon.length < 3 ||
+    !terrainState
+  ) {
     return;
   }
 
   if (sourceOutline) {
-    sourceGroup.remove(sourceOutline);
+    sourceGroup.remove(
+      sourceOutline
+    );
+
     sourceOutline.geometry.dispose();
+    sourceOutline.material.dispose();
   }
 
-  const outlinePoints = polygon.map((point) => {
-    return new THREE.Vector3(
-      point.x,
-      terrainHeightAt(point.x, point.y) + 0.12,
-      point.y
-    );
-  });
+  const outlinePoints =
+    polygon.map((point) => {
+      return new THREE.Vector3(
+        point.x,
+        terrainHeightAt(
+          point.x,
+          point.y
+        ) + 0.12,
+        point.y
+      );
+    });
 
-  sourceOutline = createLineObject(
-    outlinePoints,
-    new THREE.LineBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.9
-    }),
-    true
-  );
+  sourceOutline =
+    createLineObject(
+      outlinePoints,
+      new THREE.LineBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.9
+      }),
+      true
+    );
 
   sourceGroup.add(sourceOutline);
 
 
   if (sourceVolumeWire) {
-    sourceGroup.remove(sourceVolumeWire);
+    sourceGroup.remove(
+      sourceVolumeWire
+    );
+
     sourceVolumeWire.geometry.dispose();
+    sourceVolumeWire.material.dispose();
   }
 
-  const area = Math.max(getSourceArea(), 0.01);
-  const physicalHeight = params.sourceVolume / area;
+  const displayHeight =
+    getSourceDisplayHeight();
 
   const segmentVertices = [];
 
-  for (let i = 0; i < polygon.length; i++) {
-    const current = polygon[i];
-    const next = polygon[(i + 1) % polygon.length];
+  for (
+    let i = 0;
+    i < polygon.length;
+    i++
+  ) {
+    const current =
+      polygon[i];
+
+    const next =
+      polygon[
+        (i + 1) % polygon.length
+      ];
 
     const currentBase =
-      terrainHeightAt(current.x, current.y) + 0.06;
+      terrainHeightAt(
+        current.x,
+        current.y
+      ) + 0.06;
 
     const nextBase =
-      terrainHeightAt(next.x, next.y) + 0.06;
+      terrainHeightAt(
+        next.x,
+        next.y
+      ) + 0.06;
 
-    const currentBottom = new THREE.Vector3(
-      current.x,
-      currentBase,
-      current.y
-    );
+    const currentBottom =
+      new THREE.Vector3(
+        current.x,
+        currentBase,
+        current.y
+      );
 
-    const nextBottom = new THREE.Vector3(
-      next.x,
-      nextBase,
-      next.y
-    );
+    const nextBottom =
+      new THREE.Vector3(
+        next.x,
+        nextBase,
+        next.y
+      );
 
-    const currentTop = new THREE.Vector3(
-      current.x,
-      currentBase + physicalHeight,
-      current.y
-    );
+    const currentTop =
+      new THREE.Vector3(
+        current.x,
+        currentBase +
+          displayHeight,
+        current.y
+      );
 
-    const nextTop = new THREE.Vector3(
-      next.x,
-      nextBase + physicalHeight,
-      next.y
-    );
+    const nextTop =
+      new THREE.Vector3(
+        next.x,
+        nextBase +
+          displayHeight,
+        next.y
+      );
 
     segmentVertices.push(
       currentBottom,
       nextBottom,
+
       currentTop,
       nextTop,
+
       currentBottom,
       currentTop
     );
   }
 
-  const volumeGeometry = new THREE.BufferGeometry()
-    .setFromPoints(segmentVertices);
+  const volumeGeometry =
+    new THREE.BufferGeometry()
+      .setFromPoints(
+        segmentVertices
+      );
 
-  sourceVolumeWire = new THREE.LineSegments(
-    volumeGeometry,
-    new THREE.LineBasicMaterial({
-      color: 0x9eaca5,
-      transparent: true,
-      opacity: 0.42
-    })
+  sourceVolumeWire =
+    new THREE.LineSegments(
+      volumeGeometry,
+      new THREE.LineBasicMaterial({
+        color: 0x9eaca5,
+        transparent: true,
+        opacity: 0.42
+      })
+    );
+
+  sourceGroup.add(
+    sourceVolumeWire
   );
-
-  sourceGroup.add(sourceVolumeWire);
 
   if (source.customPolygonLocal) {
     ui.releaseAreaReadout.textContent =
-      `CUSTOM AREA: ${formatNumber(source.customArea)} m²`;
+      `CUSTOM AREA: ${formatNumber(
+        source.customArea
+      )} m²`;
   }
 
-  sourceGroup.visible = !simulation.started;
+  sourceGroup.visible =
+    !simulation.started;
 }
 
 
 function updateDraftLine() {
   if (draftLine) {
-    sourceGroup.remove(draftLine);
+    sourceGroup.remove(
+      draftLine
+    );
+
     draftLine.geometry.dispose();
+    draftLine.material.dispose();
+
     draftLine = null;
   }
 
-  if (source.draftWorld.length === 0) {
+  if (
+    source.draftWorld.length === 0
+  ) {
     return;
   }
 
-  const points = source.draftWorld.map((point) => {
-    return new THREE.Vector3(
-      point.x,
-      terrainHeightAt(point.x, point.y) + 0.25,
-      point.y
+  const points =
+    source.draftWorld.map(
+      (point) => {
+        return new THREE.Vector3(
+          point.x,
+          terrainHeightAt(
+            point.x,
+            point.y
+          ) + 0.25,
+          point.y
+        );
+      }
     );
-  });
 
-  draftLine = createLineObject(
-    points,
-    new THREE.LineBasicMaterial({
-      color: 0xe5b278,
-      linewidth: 2
-    }),
-    false
-  );
+  draftLine =
+    createLineObject(
+      points,
+      new THREE.LineBasicMaterial({
+        color: 0xe5b278
+      }),
+      false
+    );
 
   sourceGroup.add(draftLine);
 }
@@ -1549,45 +2115,64 @@ function clearCustomShape() {
   ui.releaseAreaReadout.textContent =
     "NO CUSTOM SHAPE";
 
-  setStatus("CUSTOM SHAPE CLEARED");
+  setStatus(
+    "CUSTOM SHAPE CLEARED"
+  );
 
   requestParticleReset();
 }
 
 
 function finishCustomShape() {
-  const points = source.draftWorld;
+  const points =
+    source.draftWorld;
 
   if (points.length < 3) {
     source.drawing = false;
-    setStatus("ADD AT LEAST 3 POINTS");
+    setStatus(
+      "ADD AT LEAST 3 POINTS"
+    );
+
     return;
   }
 
-  if (polygonSelfIntersects(points)) {
+  if (
+    polygonSelfIntersects(points)
+  ) {
     source.drawing = false;
-    setStatus("SHAPE LINES MAY NOT CROSS");
+    setStatus(
+      "SHAPE LINES MAY NOT CROSS"
+    );
+
     return;
   }
 
-  const area = absolutePolygonArea(points);
+  const area =
+    absolutePolygonArea(points);
 
   if (area < 1) {
     source.drawing = false;
-    setStatus("CUSTOM SHAPE IS TOO SMALL");
+    setStatus(
+      "CUSTOM SHAPE IS TOO SMALL"
+    );
+
     return;
   }
 
-  const centroid = polygonCentroid(points);
+  const centroid =
+    polygonCentroid(points);
 
-  source.center.copy(centroid);
+  source.center.copy(
+    centroid
+  );
 
-  source.customPolygonLocal = points.map((point) => {
-    return new THREE.Vector2(
-      point.x - centroid.x,
-      point.y - centroid.y
-    );
-  });
+  source.customPolygonLocal =
+    points.map((point) => {
+      return new THREE.Vector2(
+        point.x - centroid.x,
+        point.y - centroid.y
+      );
+    });
 
   source.customArea = area;
   source.draftWorld = [];
@@ -1597,20 +2182,30 @@ function finishCustomShape() {
   updateSourceVisuals();
 
   ui.releaseAreaReadout.textContent =
-    `CUSTOM AREA: ${formatNumber(area)} m²`;
+    `CUSTOM AREA: ${formatNumber(
+      area
+    )} m²`;
 
-  setStatus("CUSTOM SHAPE READY");
+  setStatus(
+    "CUSTOM SHAPE READY"
+  );
 
   requestParticleReset();
 }
 
 
 function addDraftPoint(point) {
-  if (source.draftWorld.length > 0) {
+  if (
+    source.draftWorld.length > 0
+  ) {
     const previous =
-      source.draftWorld[source.draftWorld.length - 1];
+      source.draftWorld[
+        source.draftWorld.length - 1
+      ];
 
-    if (previous.distanceTo(point) < 0.5) {
+    if (
+      previous.distanceTo(point) < 0.5
+    ) {
       return;
     }
   }
@@ -1618,156 +2213,17 @@ function addDraftPoint(point) {
   source.draftWorld.push(point);
   updateDraftLine();
 
-  setStatus("DRAWING RELEASE SHAPE");
+  setStatus(
+    "DRAWING RELEASE SHAPE"
+  );
 }
 
 
 /* ------------------------------------------------------------------------- */
-/* Particle generation and rendering                                          */
+/* Particle generation                                                       */
 /* ------------------------------------------------------------------------- */
 
-function createSeededRandom(seed = 12345) {
-  let state = seed >>> 0;
-
-  return () => {
-    state += 0x6d2b79f5;
-
-    let value = state;
-
-    value = Math.imul(
-      value ^ (value >>> 15),
-      value | 1
-    );
-
-    value ^= value + Math.imul(
-      value ^ (value >>> 7),
-      value | 61
-    );
-
-    return (
-      ((value ^ (value >>> 14)) >>> 0) /
-      4294967296
-    );
-  };
-}
-
-
-function samplePointInsidePolygon(
-  polygon,
-  bounds,
-  random
-) {
-  for (let attempt = 0; attempt < 80; attempt++) {
-    const point = new THREE.Vector2(
-      THREE.MathUtils.lerp(
-        bounds.min.x,
-        bounds.max.x,
-        random()
-      ),
-      THREE.MathUtils.lerp(
-        bounds.min.y,
-        bounds.max.y,
-        random()
-      )
-    );
-
-    if (pointInPolygon(point, polygon)) {
-      return point;
-    }
-  }
-
-  return polygonCentroid(polygon);
-}
-
-
-function requestedParticleCount() {
-  return Math.max(
-    1,
-    Math.round(
-      params.sourceVolume *
-      params.particleDensity
-    )
-  );
-}
-
-
-function getStartDirection(x, z) {
-  const mode = params.startDirectionMode;
-
-  let dx = 0;
-  let dz = 1;
-
-  if (mode === "downhill") {
-    const normal = terrainNormalAt(x, z);
-
-    dx = -normal.x;
-    dz = -normal.z;
-  }
-
-  if (mode === "fixed") {
-    const angle = THREE.MathUtils.degToRad(
-      params.directionAngle
-    );
-
-    dx = Math.sin(angle);
-    dz = Math.cos(angle);
-  }
-
-  if (mode === "radial") {
-    dx = x - source.center.x;
-    dz = z - source.center.y;
-
-    if (Math.hypot(dx, dz) < 0.001) {
-      const normal = terrainNormalAt(x, z);
-      dx = -normal.x;
-      dz = -normal.z;
-    }
-  }
-
-  if (mode === "vector") {
-    dx = params.directionX;
-    dz = params.directionZ;
-  }
-
-  const length = Math.hypot(dx, dz);
-
-  if (length < 0.000001) {
-    return new THREE.Vector3(0, 0, 1);
-  }
-
-  return new THREE.Vector3(
-    dx / length,
-    0,
-    dz / length
-  );
-}
-
-
-function generateParticles() {
-  const requested = requestedParticleCount();
-
-  const count = Math.min(
-    requested,
-    MAX_SIMULATED_PARTICLES
-  );
-
-  const parcelVolume =
-    params.sourceVolume / count;
-
-  const radius = Math.cbrt(
-    parcelVolume * 3 /
-    (4 * Math.PI)
-  );
-
-  const positions = new Float32Array(count * 3);
-  const velocities = new Float32Array(count * 3);
-  const ages = new Float32Array(count);
-  const distanceTraveled = new Float32Array(count);
-  const settledDuration = new Float32Array(count);
-  const lastPositions = new Float32Array(count * 3);
-
-  const polygon = getSourcePolygonWorld();
-
+function getPolygonBounds(polygon) {
   let minX = Infinity;
   let minZ = Infinity;
   let maxX = -Infinity;
@@ -1780,67 +2236,332 @@ function generateParticles() {
     maxZ = Math.max(maxZ, point.y);
   }
 
-  const bounds = {
-    min: new THREE.Vector2(minX, minZ),
-    max: new THREE.Vector2(maxX, maxZ)
+  return {
+    minX,
+    minZ,
+    maxX,
+    maxZ
   };
+}
 
-  const random = createSeededRandom(
-    Math.round(params.sourceVolume) +
-    Math.round(params.particleDensity * 1000)
-  );
 
-  const particlesPerLayer = Math.max(
-    1,
-    Math.ceil(Math.sqrt(count))
-  );
+/*
+  Builds a horizontal layer based on the actual release area.
+
+  The old implementation used sqrt(count), which meant that the source
+  area had no influence on the initial pile height. This version puts as
+  many particles as possible across the release footprint before creating
+  another vertical layer.
+*/
+function buildInitialBasePositions(
+  polygon,
+  count,
+  radius
+) {
+  const bounds =
+    getPolygonBounds(polygon);
+
+  const area =
+    Math.max(
+      absolutePolygonArea(polygon),
+      0.01
+    );
+
+  const areaBasedSpacing =
+    Math.sqrt(
+      area / Math.max(count, 1)
+    ) * 0.92;
+
+  const particleBasedSpacing =
+    radius *
+    INITIAL_PARTICLE_HORIZONTAL_SPACING;
+
+  const spacing =
+    Math.max(
+      areaBasedSpacing,
+      particleBasedSpacing,
+      0.01
+    );
+
+  const candidates = [];
+
+  let row = 0;
+
+  for (
+    let z =
+      bounds.minZ + spacing * 0.5;
+    z <= bounds.maxZ;
+    z += spacing
+  ) {
+    const offset =
+      row % 2 === 1
+        ? spacing * 0.5
+        : 0;
+
+    for (
+      let x =
+        bounds.minX +
+        spacing * 0.5 +
+        offset;
+      x <= bounds.maxX;
+      x += spacing
+    ) {
+      const point =
+        new THREE.Vector2(
+          x,
+          z
+        );
+
+      if (
+        pointInPolygon(
+          point,
+          polygon
+        )
+      ) {
+        candidates.push(point);
+      }
+    }
+
+    row++;
+  }
+
+  if (candidates.length === 0) {
+    candidates.push(
+      polygonCentroid(polygon)
+    );
+  }
+
+  if (candidates.length <= count) {
+    return candidates;
+  }
+
+  const selected = [];
 
   for (let i = 0; i < count; i++) {
-    const point = samplePointInsidePolygon(
+    const index =
+      Math.min(
+        candidates.length - 1,
+        Math.floor(
+          (
+            i + 0.5
+          ) *
+          candidates.length /
+          count
+        )
+      );
+
+    selected.push(
+      candidates[index]
+    );
+  }
+
+  return selected;
+}
+
+
+function getStartDirection(x, z) {
+  const mode =
+    params.startDirectionMode;
+
+  let dx = 0;
+  let dz = 1;
+
+  if (mode === "downhill") {
+    const normal =
+      terrainNormalAt(x, z);
+
+    dx = -normal.x;
+    dz = -normal.z;
+  }
+
+  if (mode === "fixed") {
+    const angle =
+      THREE.MathUtils.degToRad(
+        params.directionAngle
+      );
+
+    dx = Math.sin(angle);
+    dz = Math.cos(angle);
+  }
+
+  if (mode === "radial") {
+    dx =
+      x - source.center.x;
+
+    dz =
+      z - source.center.y;
+
+    if (
+      Math.hypot(dx, dz) <
+      0.001
+    ) {
+      const normal =
+        terrainNormalAt(x, z);
+
+      dx = -normal.x;
+      dz = -normal.z;
+    }
+  }
+
+  if (mode === "vector") {
+    dx = params.directionX;
+    dz = params.directionZ;
+  }
+
+  const length =
+    Math.hypot(dx, dz);
+
+  if (length < 0.000001) {
+    return new THREE.Vector3(
+      0,
+      0,
+      1
+    );
+  }
+
+  return new THREE.Vector3(
+    dx / length,
+    0,
+    dz / length
+  );
+}
+
+
+function generateParticles() {
+  const requested =
+    requestedParticleCount();
+
+  const count =
+    Math.min(
+      requested,
+      MAX_SIMULATED_PARTICLES
+    );
+
+  const safeVolume =
+    clamp(
+      params.sourceVolume,
+      MIN_SOURCE_VOLUME,
+      MAX_SOURCE_VOLUME
+    );
+
+  const parcelVolume =
+    safeVolume / count;
+
+  const physicalRadius =
+    Math.cbrt(
+      parcelVolume * 3 /
+      (4 * Math.PI)
+    );
+
+  const physicalDiameter =
+    physicalRadius * 2;
+
+  const verticalSpacing =
+    Math.max(
+      physicalDiameter *
+        INITIAL_PARTICLE_VERTICAL_SPACING,
+      0.01
+    );
+
+  const positions =
+    new Float32Array(
+      count * 3
+    );
+
+  const velocities =
+    new Float32Array(
+      count * 3
+    );
+
+  const ages =
+    new Float32Array(count);
+
+  const distanceTraveled =
+    new Float32Array(count);
+
+  const settledDuration =
+    new Float32Array(count);
+
+  const lastPositions =
+    new Float32Array(
+      count * 3
+    );
+
+  const polygon =
+    getSourcePolygonWorld();
+
+  const basePositions =
+    buildInitialBasePositions(
       polygon,
-      bounds,
-      random
+      count,
+      physicalRadius
     );
 
-    const layer = Math.floor(
-      i / particlesPerLayer
+  const layerCount =
+    Math.ceil(
+      count /
+      basePositions.length
     );
 
-    const terrainY = terrainHeightAt(
-      point.x,
-      point.y
-    );
+  const initialStackHeight =
+    physicalDiameter +
+    (
+      Math.max(
+        layerCount - 1,
+        0
+      ) *
+      verticalSpacing
+    ) +
+    SURFACE_CLEARANCE * 2;
 
-    const jitter = (
-      random() - 0.5
-    ) * radius * 0.08;
+  for (let i = 0; i < count; i++) {
+    const base =
+      basePositions[
+        i % basePositions.length
+      ];
 
-    const x = point.x + jitter;
-    const z = point.y + jitter;
+    const layer =
+      Math.floor(
+        i /
+        basePositions.length
+      );
+
+    const x = base.x;
+    const z = base.y;
+
+    const terrainY =
+      terrainHeightAt(x, z);
 
     const y =
       terrainY +
-      radius +
+      physicalRadius +
       SURFACE_CLEARANCE +
-      layer * radius * 1.88;
+      layer *
+        verticalSpacing;
 
-    positions[i * 3] = x;
-    positions[i * 3 + 1] = y;
-    positions[i * 3 + 2] = z;
+    const index =
+      i * 3;
 
-    const direction = getStartDirection(x, z);
+    positions[index] = x;
+    positions[index + 1] = y;
+    positions[index + 2] = z;
 
-    velocities[i * 3] =
-      direction.x * params.startVelocity;
+    const direction =
+      getStartDirection(x, z);
 
-    velocities[i * 3 + 1] = 0;
+    velocities[index] =
+      direction.x *
+      params.startVelocity;
 
-    velocities[i * 3 + 2] =
-      direction.z * params.startVelocity;
+    velocities[index + 1] = 0;
 
-    lastPositions[i * 3] = x;
-    lastPositions[i * 3 + 1] = y;
-    lastPositions[i * 3 + 2] = z;
+    velocities[index + 2] =
+      direction.z *
+      params.startVelocity;
+
+    lastPositions[index] = x;
+    lastPositions[index + 1] = y;
+    lastPositions[index + 2] = z;
   }
 
   particles = {
@@ -1851,13 +2572,21 @@ function generateParticles() {
     distanceTraveled,
     settledDuration,
     lastPositions,
+
     parcelVolume,
-    radius
+    radius: physicalRadius,
+
+    layerCount,
+    initialStackHeight
   };
 
   updateParticleReadout();
 }
 
+
+/* ------------------------------------------------------------------------- */
+/* Particle rendering                                                       */
+/* ------------------------------------------------------------------------- */
 
 function particleVertexShader() {
   return `
@@ -1902,10 +2631,17 @@ function particleFragmentShader() {
       }
 
       float edge =
-        smoothstep(0.5, 0.35, distanceFromCentre);
+        smoothstep(
+          0.5,
+          0.35,
+          distanceFromCentre
+        );
 
       gl_FragColor =
-        vec4(vColor, edge * 0.96);
+        vec4(
+          vColor,
+          edge * 0.96
+        );
     }
   `;
 }
@@ -1913,7 +2649,9 @@ function particleFragmentShader() {
 
 function createParticleVisual() {
   if (particlePoints) {
-    scene.remove(particlePoints);
+    scene.remove(
+      particlePoints
+    );
 
     particleGeometry.dispose();
     particleMaterial.dispose();
@@ -1923,7 +2661,8 @@ function createParticleVisual() {
     particleMaterial = null;
   }
 
-  particleGeometry = new THREE.BufferGeometry();
+  particleGeometry =
+    new THREE.BufferGeometry();
 
   particleGeometry.setAttribute(
     "position",
@@ -1936,50 +2675,76 @@ function createParticleVisual() {
   particleGeometry.setAttribute(
     "color",
     new THREE.BufferAttribute(
-      new Float32Array(particles.count * 3),
+      new Float32Array(
+        particles.count * 3
+      ),
       3
     )
   );
 
-  particleMaterial = new THREE.ShaderMaterial({
-    vertexShader: particleVertexShader(),
-    fragmentShader: particleFragmentShader(),
-    uniforms: {
-      uSize: {
-        value: clamp(
-          particles.radius * 2 * params.particleSize,
-          0.15,
-          8
-        )
-      }
-    },
-    transparent: true,
-    depthTest: true,
-    depthWrite: false
-  });
+  particleMaterial =
+    new THREE.ShaderMaterial({
+      vertexShader:
+        particleVertexShader(),
 
-  particlePoints = new THREE.Points(
-    particleGeometry,
-    particleMaterial
-  );
+      fragmentShader:
+        particleFragmentShader(),
+
+      uniforms: {
+        uSize: {
+          value: clamp(
+            particles.radius *
+              2 *
+              params.particleSize,
+            0.15,
+            8
+          )
+        }
+      },
+
+      transparent: true,
+      depthTest: true,
+      depthWrite: false
+    });
+
+  particlePoints =
+    new THREE.Points(
+      particleGeometry,
+      particleMaterial
+    );
 
   particlePoints.frustumCulled = false;
 
-  scene.add(particlePoints);
+  scene.add(
+    particlePoints
+  );
 }
 
 
 function makoColor(value, target) {
-  const t = clamp(value, 0, 1);
-  const scaled = t * (MAKO_COLORS.length - 1);
-  const index = Math.min(
-    MAKO_COLORS.length - 2,
-    Math.floor(scaled)
-  );
+  const t =
+    clamp(
+      value,
+      0,
+      1
+    );
 
-  const fraction = scaled - index;
+  const scaled =
+    t *
+    (MAKO_COLORS.length - 1);
 
-  target.copy(MAKO_COLORS[index]).lerp(
+  const index =
+    Math.min(
+      MAKO_COLORS.length - 2,
+      Math.floor(scaled)
+    );
+
+  const fraction =
+    scaled - index;
+
+  target.copy(
+    MAKO_COLORS[index]
+  ).lerp(
     MAKO_COLORS[index + 1],
     fraction
   );
@@ -1987,51 +2752,82 @@ function makoColor(value, target) {
 
 
 function updateParticleColors() {
-  if (!particles || !particleGeometry) {
+  if (
+    !particles ||
+    !particleGeometry
+  ) {
     return;
   }
 
   const colorAttribute =
-    particleGeometry.getAttribute("color");
+    particleGeometry.getAttribute(
+      "color"
+    );
 
-  const colors = colorAttribute.array;
-  const count = particles.count;
+  const colors =
+    colorAttribute.array;
+
+  const count =
+    particles.count;
 
   let maximumSpeed = 0;
   let maximumDistance = 0;
   let maximumAge = 0;
 
   for (let i = 0; i < count; i++) {
-    const vx = particles.velocities[i * 3];
-    const vy = particles.velocities[i * 3 + 1];
-    const vz = particles.velocities[i * 3 + 2];
+    const index =
+      i * 3;
 
-    maximumSpeed = Math.max(
-      maximumSpeed,
-      Math.hypot(vx, vy, vz)
-    );
+    const vx =
+      particles.velocities[index];
 
-    maximumDistance = Math.max(
-      maximumDistance,
-      particles.distanceTraveled[i]
-    );
+    const vy =
+      particles.velocities[index + 1];
 
-    maximumAge = Math.max(
-      maximumAge,
-      particles.ages[i]
-    );
+    const vz =
+      particles.velocities[index + 2];
+
+    maximumSpeed =
+      Math.max(
+        maximumSpeed,
+        Math.hypot(
+          vx,
+          vy,
+          vz
+        )
+      );
+
+    maximumDistance =
+      Math.max(
+        maximumDistance,
+        particles.distanceTraveled[i]
+      );
+
+    maximumAge =
+      Math.max(
+        maximumAge,
+        particles.ages[i]
+      );
   }
 
-  const thicknessCell = Math.max(
-    5,
-    particles.radius * 4
-  );
+  const thicknessCell =
+    Math.max(
+      5,
+      particles.radius * 4
+    );
 
-  const thicknessMap = new Map();
+  const thicknessMap =
+    new Map();
 
   for (let i = 0; i < count; i++) {
-    const x = particles.positions[i * 3];
-    const z = particles.positions[i * 3 + 2];
+    const index =
+      i * 3;
+
+    const x =
+      particles.positions[index];
+
+    const z =
+      particles.positions[index + 2];
 
     const key =
       `${Math.floor(x / thicknessCell)}:` +
@@ -2039,47 +2835,78 @@ function updateParticleColors() {
 
     thicknessMap.set(
       key,
-      (thicknessMap.get(key) || 0) +
+      (
+        thicknessMap.get(key) || 0
+      ) +
       particles.parcelVolume
     );
   }
 
   let maximumThickness = 0;
 
-  for (const volume of thicknessMap.values()) {
+  for (
+    const volume of thicknessMap.values()
+  ) {
     const thickness =
       volume /
-      (thicknessCell * thicknessCell);
+      (
+        thicknessCell *
+        thicknessCell
+      );
 
-    maximumThickness = Math.max(
-      maximumThickness,
-      thickness
-    );
+    maximumThickness =
+      Math.max(
+        maximumThickness,
+        thickness
+      );
   }
 
-  const temporaryColor = new THREE.Color();
+  const temporaryColor =
+    new THREE.Color();
 
   for (let i = 0; i < count; i++) {
+    const index =
+      i * 3;
+
     let value = 0.6;
 
-    if (params.colorMode === "material") {
+    if (
+      params.colorMode ===
+      "material"
+    ) {
       value =
         0.35 +
-        params.materialFriction * 0.45;
+        params.materialFriction *
+          0.45;
     }
 
-    if (params.colorMode === "velocity") {
-      const vx = particles.velocities[i * 3];
-      const vy = particles.velocities[i * 3 + 1];
-      const vz = particles.velocities[i * 3 + 2];
+    if (
+      params.colorMode ===
+      "velocity"
+    ) {
+      const vx =
+        particles.velocities[index];
+
+      const vy =
+        particles.velocities[index + 1];
+
+      const vz =
+        particles.velocities[index + 2];
 
       value =
         maximumSpeed > 0
-          ? Math.hypot(vx, vy, vz) / maximumSpeed
+          ? Math.hypot(
+              vx,
+              vy,
+              vz
+            ) / maximumSpeed
           : 0;
     }
 
-    if (params.colorMode === "distance") {
+    if (
+      params.colorMode ===
+      "distance"
+    ) {
       value =
         maximumDistance > 0
           ? particles.distanceTraveled[i] /
@@ -2087,38 +2914,61 @@ function updateParticleColors() {
           : 0;
     }
 
-    if (params.colorMode === "age") {
+    if (
+      params.colorMode ===
+      "age"
+    ) {
       value =
         maximumAge > 0
-          ? particles.ages[i] / maximumAge
+          ? particles.ages[i] /
+            maximumAge
           : 0;
     }
 
-    if (params.colorMode === "thickness") {
-      const x = particles.positions[i * 3];
-      const z = particles.positions[i * 3 + 2];
+    if (
+      params.colorMode ===
+      "thickness"
+    ) {
+      const x =
+        particles.positions[index];
+
+      const z =
+        particles.positions[index + 2];
 
       const key =
         `${Math.floor(x / thicknessCell)}:` +
         `${Math.floor(z / thicknessCell)}`;
 
-      const volume = thicknessMap.get(key) || 0;
+      const volume =
+        thicknessMap.get(key) || 0;
 
       const thickness =
         volume /
-        (thicknessCell * thicknessCell);
+        (
+          thicknessCell *
+          thicknessCell
+        );
 
       value =
         maximumThickness > 0
-          ? thickness / maximumThickness
+          ? thickness /
+            maximumThickness
           : 0;
     }
 
-    makoColor(value, temporaryColor);
+    makoColor(
+      value,
+      temporaryColor
+    );
 
-    colors[i * 3] = temporaryColor.r;
-    colors[i * 3 + 1] = temporaryColor.g;
-    colors[i * 3 + 2] = temporaryColor.b;
+    colors[index] =
+      temporaryColor.r;
+
+    colors[index + 1] =
+      temporaryColor.g;
+
+    colors[index + 2] =
+      temporaryColor.b;
   }
 
   colorAttribute.needsUpdate = true;
@@ -2126,7 +2976,9 @@ function updateParticleColors() {
   if (particleMaterial) {
     particleMaterial.uniforms.uSize.value =
       clamp(
-        particles.radius * 2 * params.particleSize,
+        particles.radius *
+          2 *
+          params.particleSize,
         0.15,
         8
       );
@@ -2140,14 +2992,16 @@ function syncPointParticles() {
   }
 
   const positionAttribute =
-    particleGeometry.getAttribute("position");
+    particleGeometry.getAttribute(
+      "position"
+    );
 
   positionAttribute.needsUpdate = true;
 }
 
 
 /* ------------------------------------------------------------------------- */
-/* Physics                                                                    */
+/* Physics                                                                  */
 /* ------------------------------------------------------------------------- */
 
 function spatialKey(x, y, z) {
@@ -2159,17 +3013,27 @@ function buildSpatialHash(cellSize) {
   const hash = new Map();
 
   for (let i = 0; i < particles.count; i++) {
-    const x = particles.positions[i * 3];
-    const y = particles.positions[i * 3 + 1];
-    const z = particles.positions[i * 3 + 2];
+    const index =
+      i * 3;
 
-    const key = spatialKey(
-      Math.floor(x / cellSize),
-      Math.floor(y / cellSize),
-      Math.floor(z / cellSize)
-    );
+    const x =
+      particles.positions[index];
 
-    let bucket = hash.get(key);
+    const y =
+      particles.positions[index + 1];
+
+    const z =
+      particles.positions[index + 2];
+
+    const key =
+      spatialKey(
+        Math.floor(x / cellSize),
+        Math.floor(y / cellSize),
+        Math.floor(z / cellSize)
+      );
+
+    let bucket =
+      hash.get(key);
 
     if (!bucket) {
       bucket = [];
@@ -2191,37 +3055,55 @@ function applyCohesion(deltaTime) {
     return;
   }
 
-  const range = Math.max(
-    particles.radius *
-      2 *
-      COHESION_RANGE_MULTIPLIER,
-    0.1
-  );
+  const range =
+    Math.max(
+      particles.radius *
+        2 *
+        COHESION_RANGE_MULTIPLIER,
+      0.1
+    );
 
-  const hash = buildSpatialHash(range);
-  const checkedPairs = new Set();
+  const hash =
+    buildSpatialHash(range);
+
+  const checkedPairs =
+    new Set();
 
   for (let i = 0; i < particles.count; i++) {
-    const ix = Math.floor(
-      particles.positions[i * 3] / range
-    );
+    const index =
+      i * 3;
 
-    const iy = Math.floor(
-      particles.positions[i * 3 + 1] / range
-    );
+    const ix =
+      Math.floor(
+        particles.positions[index] /
+          range
+      );
 
-    const iz = Math.floor(
-      particles.positions[i * 3 + 2] / range
-    );
+    const iy =
+      Math.floor(
+        particles.positions[index + 1] /
+          range
+      );
+
+    const iz =
+      Math.floor(
+        particles.positions[index + 2] /
+          range
+      );
 
     let neighbourCount = 0;
 
     for (let dx = -1; dx <= 1; dx++) {
       for (let dy = -1; dy <= 1; dy++) {
         for (let dz = -1; dz <= 1; dz++) {
-          const bucket = hash.get(
-            spatialKey(ix + dx, iy + dy, iz + dz)
-          );
+          const bucket =
+            hash.get(
+              spatialKey(
+                ix + dx,
+                iy + dy,
+                iz + dz
+              )
+            );
 
           if (!bucket) {
             continue;
@@ -2232,31 +3114,42 @@ function applyCohesion(deltaTime) {
               continue;
             }
 
-            const pairKey = `${i}:${j}`;
+            const pairKey =
+              `${i}:${j}`;
 
-            if (checkedPairs.has(pairKey)) {
+            if (
+              checkedPairs.has(
+                pairKey
+              )
+            ) {
               continue;
             }
 
-            checkedPairs.add(pairKey);
+            checkedPairs.add(
+              pairKey
+            );
+
+            const jIndex =
+              j * 3;
 
             const dxp =
-              particles.positions[j * 3] -
-              particles.positions[i * 3];
+              particles.positions[jIndex] -
+              particles.positions[index];
 
             const dyp =
-              particles.positions[j * 3 + 1] -
-              particles.positions[i * 3 + 1];
+              particles.positions[jIndex + 1] -
+              particles.positions[index + 1];
 
             const dzp =
-              particles.positions[j * 3 + 2] -
-              particles.positions[i * 3 + 2];
+              particles.positions[jIndex + 2] -
+              particles.positions[index + 2];
 
-            const distance = Math.hypot(
-              dxp,
-              dyp,
-              dzp
-            );
+            const distance =
+              Math.hypot(
+                dxp,
+                dyp,
+                dzp
+              );
 
             if (
               distance <= 0.000001 ||
@@ -2268,41 +3161,72 @@ function applyCohesion(deltaTime) {
             const strength =
               params.particleCohesion *
               COHESION_STRENGTH *
-              (1 - distance / range);
+              (
+                1 -
+                distance / range
+              );
 
             const impulse =
-              strength * deltaTime;
+              strength *
+              deltaTime;
 
-            const nx = dxp / distance;
-            const ny = dyp / distance;
-            const nzp = dzp / distance;
+            const nx =
+              dxp / distance;
 
-            particles.velocities[i * 3] += nx * impulse;
-            particles.velocities[i * 3 + 1] += ny * impulse;
-            particles.velocities[i * 3 + 2] += nzp * impulse;
+            const ny =
+              dyp / distance;
 
-            particles.velocities[j * 3] -= nx * impulse;
-            particles.velocities[j * 3 + 1] -= ny * impulse;
-            particles.velocities[j * 3 + 2] -= nzp * impulse;
+            const nz =
+              dzp / distance;
+
+            particles.velocities[index] +=
+              nx * impulse;
+
+            particles.velocities[index + 1] +=
+              ny * impulse;
+
+            particles.velocities[index + 2] +=
+              nz * impulse;
+
+            particles.velocities[jIndex] -=
+              nx * impulse;
+
+            particles.velocities[jIndex + 1] -=
+              ny * impulse;
+
+            particles.velocities[jIndex + 2] -=
+              nz * impulse;
 
             neighbourCount++;
 
-            if (neighbourCount >= MAX_COHESION_NEIGHBOURS) {
+            if (
+              neighbourCount >=
+              MAX_COHESION_NEIGHBOURS
+            ) {
               break;
             }
           }
 
-          if (neighbourCount >= MAX_COHESION_NEIGHBOURS) {
+          if (
+            neighbourCount >=
+            MAX_COHESION_NEIGHBOURS
+          ) {
             break;
           }
         }
 
-        if (neighbourCount >= MAX_COHESION_NEIGHBOURS) {
+        if (
+          neighbourCount >=
+          MAX_COHESION_NEIGHBOURS
+        ) {
           break;
         }
       }
 
-      if (neighbourCount >= MAX_COHESION_NEIGHBOURS) {
+      if (
+        neighbourCount >=
+        MAX_COHESION_NEIGHBOURS
+      ) {
         break;
       }
     }
@@ -2310,38 +3234,65 @@ function applyCohesion(deltaTime) {
 }
 
 
-function resolveTerrainContact(index, deltaTime) {
-  const positionIndex = index * 3;
+function resolveTerrainContact(
+  index,
+  deltaTime
+) {
+  const positionIndex =
+    index * 3;
 
-  const x = particles.positions[positionIndex];
-  const z = particles.positions[positionIndex + 2];
+  const x =
+    particles.positions[positionIndex];
+
+  const z =
+    particles.positions[positionIndex + 2];
 
   const surface =
     terrainHeightAt(x, z) +
     particles.radius +
     SURFACE_CLEARANCE;
 
-  if (particles.positions[positionIndex + 1] > surface) {
+  if (
+    particles.positions[positionIndex + 1] >
+    surface
+  ) {
     return;
   }
 
-  particles.positions[positionIndex + 1] = surface;
+  particles.positions[positionIndex + 1] =
+    surface;
 
-  const normal = terrainNormalAt(x, z);
+  const normal =
+    terrainNormalAt(x, z);
 
-  let vx = particles.velocities[positionIndex];
-  let vy = particles.velocities[positionIndex + 1];
-  let vz = particles.velocities[positionIndex + 2];
+  let vx =
+    particles.velocities[positionIndex];
+
+  let vy =
+    particles.velocities[positionIndex + 1];
+
+  let vz =
+    particles.velocities[positionIndex + 2];
 
   const normalVelocity =
     vx * normal.x +
     vy * normal.y +
     vz * normal.z;
 
-  if (normalVelocity < 0) {
-    vx -= normal.x * normalVelocity;
-    vy -= normal.y * normalVelocity;
-    vz -= normal.z * normalVelocity;
+  if (
+    normalVelocity < 0
+  ) {
+    vx -=
+      normal.x *
+      normalVelocity;
+
+    vy -=
+      normal.y *
+      normalVelocity;
+
+    vz -=
+      normal.z *
+      normalVelocity;
   }
 
   const correctedNormalVelocity =
@@ -2350,33 +3301,49 @@ function resolveTerrainContact(index, deltaTime) {
     vz * normal.z;
 
   let tangentX =
-    vx - normal.x * correctedNormalVelocity;
+    vx -
+    normal.x *
+      correctedNormalVelocity;
 
   let tangentY =
-    vy - normal.y * correctedNormalVelocity;
+    vy -
+    normal.y *
+      correctedNormalVelocity;
 
   let tangentZ =
-    vz - normal.z * correctedNormalVelocity;
+    vz -
+    normal.z *
+      correctedNormalVelocity;
 
-  const tangentSpeed = Math.hypot(
-    tangentX,
-    tangentY,
-    tangentZ
-  );
+  const tangentSpeed =
+    Math.hypot(
+      tangentX,
+      tangentY,
+      tangentZ
+    );
 
-  if (tangentSpeed > 0.000001) {
+  if (
+    tangentSpeed > 0.000001
+  ) {
     const frictionAcceleration =
       params.terrainFriction *
       GRAVITY *
-      Math.max(normal.y, 0.1);
+      Math.max(
+        normal.y,
+        0.1
+      );
 
     const speedReduction =
-      frictionAcceleration * deltaTime;
+      frictionAcceleration *
+      deltaTime;
 
     const factor =
       Math.max(
         0,
-        (tangentSpeed - speedReduction) /
+        (
+          tangentSpeed -
+          speedReduction
+        ) /
           tangentSpeed
       );
 
@@ -2387,45 +3354,81 @@ function resolveTerrainContact(index, deltaTime) {
 
   particles.velocities[positionIndex] =
     tangentX +
-    normal.x * Math.max(correctedNormalVelocity, 0);
+    normal.x *
+      Math.max(
+        correctedNormalVelocity,
+        0
+      );
 
   particles.velocities[positionIndex + 1] =
     tangentY +
-    normal.y * Math.max(correctedNormalVelocity, 0);
+    normal.y *
+      Math.max(
+        correctedNormalVelocity,
+        0
+      );
 
   particles.velocities[positionIndex + 2] =
     tangentZ +
-    normal.z * Math.max(correctedNormalVelocity, 0);
+    normal.z *
+      Math.max(
+        correctedNormalVelocity,
+        0
+      );
 }
 
 
 function resolveParticleCollisions() {
-  const diameter = Math.max(
-    particles.radius * 2,
-    0.01
-  );
+  const diameter =
+    Math.max(
+      particles.radius * 2,
+      0.01
+    );
 
-  const hash = buildSpatialHash(diameter);
+  const hash =
+    buildSpatialHash(diameter);
 
   for (let i = 0; i < particles.count; i++) {
-    const positionIndex = i * 3;
+    const positionIndex =
+      i * 3;
 
-    const x = particles.positions[positionIndex];
-    const y = particles.positions[positionIndex + 1];
-    const z = particles.positions[positionIndex + 2];
+    const x =
+      particles.positions[positionIndex];
 
-    const ix = Math.floor(x / diameter);
-    const iy = Math.floor(y / diameter);
-    const iz = Math.floor(z / diameter);
+    const y =
+      particles.positions[positionIndex + 1];
+
+    const z =
+      particles.positions[positionIndex + 2];
+
+    const ix =
+      Math.floor(
+        x / diameter
+      );
+
+    const iy =
+      Math.floor(
+        y / diameter
+      );
+
+    const iz =
+      Math.floor(
+        z / diameter
+      );
 
     let checked = 0;
 
     for (let dx = -1; dx <= 1; dx++) {
       for (let dy = -1; dy <= 1; dy++) {
         for (let dz = -1; dz <= 1; dz++) {
-          const bucket = hash.get(
-            spatialKey(ix + dx, iy + dy, iz + dz)
-          );
+          const bucket =
+            hash.get(
+              spatialKey(
+                ix + dx,
+                iy + dy,
+                iz + dz
+              )
+            );
 
           if (!bucket) {
             continue;
@@ -2436,42 +3439,53 @@ function resolveParticleCollisions() {
               continue;
             }
 
-            const otherIndex = j * 3;
+            const otherIndex =
+              j * 3;
 
             const offsetX =
-              particles.positions[otherIndex] - x;
+              particles.positions[otherIndex] -
+              x;
 
             const offsetY =
-              particles.positions[otherIndex + 1] - y;
+              particles.positions[otherIndex + 1] -
+              y;
 
             const offsetZ =
-              particles.positions[otherIndex + 2] - z;
+              particles.positions[otherIndex + 2] -
+              z;
 
-            const distance = Math.hypot(
-              offsetX,
-              offsetY,
-              offsetZ
-            );
-
-            const minimumDistance = diameter;
+            const distance =
+              Math.hypot(
+                offsetX,
+                offsetY,
+                offsetZ
+              );
 
             if (
-              distance >= minimumDistance ||
+              distance >= diameter ||
               distance <= 0.000001
             ) {
               checked++;
               continue;
             }
 
-            const nx = offsetX / distance;
-            const ny = offsetY / distance;
-            const nz = offsetZ / distance;
+            const nx =
+              offsetX / distance;
+
+            const ny =
+              offsetY / distance;
+
+            const nz =
+              offsetZ / distance;
 
             const overlap =
-              minimumDistance - distance;
+              diameter -
+              distance;
 
             const correction =
-              overlap * 0.5 * 0.9;
+              overlap *
+              0.5 *
+              0.9;
 
             particles.positions[positionIndex] -=
               nx * correction;
@@ -2508,9 +3522,14 @@ function resolveParticleCollisions() {
               relativeY * ny +
               relativeZ * nz;
 
-            if (normalVelocity < 0) {
+            if (
+              normalVelocity < 0
+            ) {
               const normalImpulse =
-                -(1 + COLLISION_RESTITUTION) *
+                -(
+                  1 +
+                  COLLISION_RESTITUTION
+                ) *
                 normalVelocity *
                 0.5;
 
@@ -2533,30 +3552,45 @@ function resolveParticleCollisions() {
                 nz * normalImpulse;
 
               const tangentX =
-                relativeX - nx * normalVelocity;
+                relativeX -
+                nx * normalVelocity;
 
               const tangentY =
-                relativeY - ny * normalVelocity;
+                relativeY -
+                ny * normalVelocity;
 
               const tangentZ =
-                relativeZ - nz * normalVelocity;
+                relativeZ -
+                nz * normalVelocity;
 
-              const tangentSpeed = Math.hypot(
-                tangentX,
-                tangentY,
-                tangentZ
-              );
-
-              if (tangentSpeed > 0.000001) {
-                const frictionImpulse = Math.min(
-                  tangentSpeed * 0.5,
-                  params.materialFriction *
-                    normalImpulse
+              const tangentSpeed =
+                Math.hypot(
+                  tangentX,
+                  tangentY,
+                  tangentZ
                 );
 
-                const tx = tangentX / tangentSpeed;
-                const ty = tangentY / tangentSpeed;
-                const tz = tangentZ / tangentSpeed;
+              if (
+                tangentSpeed > 0.000001
+              ) {
+                const frictionImpulse =
+                  Math.min(
+                    tangentSpeed * 0.5,
+                    params.materialFriction *
+                      normalImpulse
+                  );
+
+                const tx =
+                  tangentX /
+                  tangentSpeed;
+
+                const ty =
+                  tangentY /
+                  tangentSpeed;
+
+                const tz =
+                  tangentZ /
+                  tangentSpeed;
 
                 particles.velocities[positionIndex] -=
                   tx * frictionImpulse;
@@ -2580,22 +3614,34 @@ function resolveParticleCollisions() {
 
             checked++;
 
-            if (checked >= MAX_COLLISION_NEIGHBOURS) {
+            if (
+              checked >=
+              MAX_COLLISION_NEIGHBOURS
+            ) {
               break;
             }
           }
 
-          if (checked >= MAX_COLLISION_NEIGHBOURS) {
+          if (
+            checked >=
+            MAX_COLLISION_NEIGHBOURS
+          ) {
             break;
           }
         }
 
-        if (checked >= MAX_COLLISION_NEIGHBOURS) {
+        if (
+          checked >=
+          MAX_COLLISION_NEIGHBOURS
+        ) {
           break;
         }
       }
 
-      if (checked >= MAX_COLLISION_NEIGHBOURS) {
+      if (
+        checked >=
+        MAX_COLLISION_NEIGHBOURS
+      ) {
         break;
       }
     }
@@ -2609,7 +3655,8 @@ function updatePhysics(deltaTime) {
   }
 
   for (let i = 0; i < particles.count; i++) {
-    const index = i * 3;
+    const index =
+      i * 3;
 
     particles.lastPositions[index] =
       particles.positions[index];
@@ -2624,19 +3671,24 @@ function updatePhysics(deltaTime) {
   applyCohesion(deltaTime);
 
   for (let i = 0; i < particles.count; i++) {
-    const index = i * 3;
+    const index =
+      i * 3;
 
     particles.velocities[index + 1] -=
-      GRAVITY * deltaTime;
+      GRAVITY *
+      deltaTime;
 
     particles.positions[index] +=
-      particles.velocities[index] * deltaTime;
+      particles.velocities[index] *
+      deltaTime;
 
     particles.positions[index + 1] +=
-      particles.velocities[index + 1] * deltaTime;
+      particles.velocities[index + 1] *
+      deltaTime;
 
     particles.positions[index + 2] +=
-      particles.velocities[index + 2] * deltaTime;
+      particles.velocities[index + 2] *
+      deltaTime;
   }
 
   for (
@@ -2646,41 +3698,65 @@ function updatePhysics(deltaTime) {
   ) {
     resolveParticleCollisions();
 
-    for (let i = 0; i < particles.count; i++) {
-      resolveTerrainContact(i, deltaTime);
+    for (
+      let i = 0;
+      i < particles.count;
+      i++
+    ) {
+      resolveTerrainContact(
+        i,
+        deltaTime
+      );
     }
   }
 
   let allSettled = true;
 
   for (let i = 0; i < particles.count; i++) {
-    const index = i * 3;
+    const index =
+      i * 3;
 
-    const vx = particles.velocities[index];
-    const vy = particles.velocities[index + 1];
-    const vz = particles.velocities[index + 2];
+    const vx =
+      particles.velocities[index];
 
-    const speed = Math.hypot(vx, vy, vz);
+    const vy =
+      particles.velocities[index + 1];
 
-    const movement = Math.hypot(
-      particles.positions[index] -
-        particles.lastPositions[index],
+    const vz =
+      particles.velocities[index + 2];
 
-      particles.positions[index + 1] -
-        particles.lastPositions[index + 1],
+    const speed =
+      Math.hypot(
+        vx,
+        vy,
+        vz
+      );
 
-      particles.positions[index + 2] -
-        particles.lastPositions[index + 2]
-    );
+    const movement =
+      Math.hypot(
+        particles.positions[index] -
+          particles.lastPositions[index],
 
-    particles.distanceTraveled[i] += movement;
-    particles.ages[i] += deltaTime;
+        particles.positions[index + 1] -
+          particles.lastPositions[index + 1],
+
+        particles.positions[index + 2] -
+          particles.lastPositions[index + 2]
+      );
+
+    particles.distanceTraveled[i] +=
+      movement;
+
+    particles.ages[i] +=
+      deltaTime;
 
     if (
-      speed < params.minimumMovementSpeed &&
+      speed <
+        params.minimumMovementSpeed &&
       movement < 0.001
     ) {
-      particles.settledDuration[i] += deltaTime;
+      particles.settledDuration[i] +=
+        deltaTime;
 
       if (
         particles.settledDuration[i] >
@@ -2710,11 +3786,12 @@ function updatePhysics(deltaTime) {
 
 
 /* ------------------------------------------------------------------------- */
-/* Simulation cache                                                          */
+/* Simulation cache                                                         */
 /* ------------------------------------------------------------------------- */
 
 function updateTimelineInterface() {
-  const hasTimeline = cacheFrames.length >= 2;
+  const hasTimeline =
+    cacheFrames.length >= 2;
 
   ui.timelineWrap.classList.toggle(
     "hidden",
@@ -2725,26 +3802,30 @@ function updateTimelineInterface() {
     return;
   }
 
-  ui.timeline.max = String(
-    cacheFrames.length - 1
-  );
+  ui.timeline.max =
+    String(
+      cacheFrames.length - 1
+    );
 
   const activeIndex =
-    replayMode && replayIndex >= 0
+    replayMode &&
+    replayIndex >= 0
       ? replayIndex
       : cacheFrames.length - 1;
 
-  ui.timeline.value = String(
-    clamp(
-      activeIndex,
-      0,
-      cacheFrames.length - 1
-    )
-  );
+  ui.timeline.value =
+    String(
+      clamp(
+        activeIndex,
+        0,
+        cacheFrames.length - 1
+      )
+    );
 
-  const frame = cacheFrames[
-    Number(ui.timeline.value)
-  ];
+  const frame =
+    cacheFrames[
+      Number(ui.timeline.value)
+    ];
 
   ui.timelineReadout.textContent =
     frame
@@ -2757,37 +3838,48 @@ function clearSimulationCache() {
   cacheFrames = [];
   replayMode = false;
   replayIndex = -1;
+
   updateTimelineInterface();
 }
 
 
-function recordSimulationSnapshot(force = false) {
+function recordSimulationSnapshot(
+  force = false
+) {
   if (!particles) {
     return;
   }
 
   const lastFrame =
-    cacheFrames[cacheFrames.length - 1];
+    cacheFrames[
+      cacheFrames.length - 1
+    ];
 
   if (
     !force &&
     lastFrame &&
-    Math.abs(lastFrame.time - simulation.time) <
-      0.0001
+    Math.abs(
+      lastFrame.time -
+        simulation.time
+    ) < 0.0001
   ) {
     return;
   }
 
-  const snapshot = {
+  cacheFrames.push({
     time: simulation.time,
-    positions: particles.positions.slice(),
-    velocities: particles.velocities.slice(),
-    distanceTraveled: particles.distanceTraveled.slice()
-  };
+    positions:
+      particles.positions.slice(),
+    velocities:
+      particles.velocities.slice(),
+    distanceTraveled:
+      particles.distanceTraveled.slice()
+  });
 
-  cacheFrames.push(snapshot);
-
-  while (cacheFrames.length > MAX_CACHE_FRAMES) {
+  while (
+    cacheFrames.length >
+    MAX_CACHE_FRAMES
+  ) {
     cacheFrames.shift();
   }
 
@@ -2804,7 +3896,8 @@ function restoreSimulationSnapshot(index) {
     return;
   }
 
-  const snapshot = cacheFrames[index];
+  const snapshot =
+    cacheFrames[index];
 
   particles.positions.set(
     snapshot.positions
@@ -2818,10 +3911,15 @@ function restoreSimulationSnapshot(index) {
     snapshot.distanceTraveled
   );
 
-  particles.ages.fill(snapshot.time);
+  particles.ages.fill(
+    snapshot.time
+  );
+
   particles.settledDuration.fill(0);
 
-  simulation.time = snapshot.time;
+  simulation.time =
+    snapshot.time;
+
   simulation.accumulator = 0;
   simulation.cacheAccumulator = 0;
 
@@ -2831,27 +3929,36 @@ function restoreSimulationSnapshot(index) {
 
 
 function handleTimelineInput() {
-  if (cacheFrames.length < 1) {
+  if (
+    cacheFrames.length < 1
+  ) {
     return;
   }
 
-  const index = Number(ui.timeline.value);
+  const index =
+    Number(ui.timeline.value);
 
   replayMode = true;
   replayIndex = index;
+
   params.running = false;
   simulation.state = "replay";
   simulation.started = true;
 
   sourceGroup.visible = false;
 
-  restoreSimulationSnapshot(index);
+  restoreSimulationSnapshot(
+    index
+  );
 
-  const frame = cacheFrames[index];
+  const frame =
+    cacheFrames[index];
 
   setStatus(
     frame
-      ? `REPLAY ${formatTime(frame.time)}`
+      ? `REPLAY ${formatTime(
+          frame.time
+        )}`
       : "REPLAY"
   );
 
@@ -2861,21 +3968,27 @@ function handleTimelineInput() {
 
 
 /* ------------------------------------------------------------------------- */
-/* Simulation control                                                        */
+/* Simulation control                                                       */
 /* ------------------------------------------------------------------------- */
 
 function updatePlayButton() {
   ui.playButton.textContent =
-    params.running ? "PAUSE" : "PLAY";
+    params.running
+      ? "PAUSE"
+      : "PLAY";
 }
 
 
 function startSimulation() {
   if (
-    params.releaseShapeMode === "polygon" &&
+    params.releaseShapeMode ===
+      "polygon" &&
     !source.customPolygonLocal
   ) {
-    setStatus("DRAW A CUSTOM RELEASE SHAPE FIRST");
+    setStatus(
+      "DRAW A CUSTOM RELEASE SHAPE FIRST"
+    );
+
     return;
   }
 
@@ -2884,15 +3997,17 @@ function startSimulation() {
   }
 
   if (replayMode) {
-    const selectedIndex = Math.max(
-      0,
-      replayIndex
-    );
+    const selectedIndex =
+      Math.max(
+        0,
+        replayIndex
+      );
 
-    cacheFrames = cacheFrames.slice(
-      0,
-      selectedIndex + 1
-    );
+    cacheFrames =
+      cacheFrames.slice(
+        0,
+        selectedIndex + 1
+      );
 
     replayMode = false;
     replayIndex = -1;
@@ -2925,7 +4040,10 @@ function finishSimulation() {
 
   recordSimulationSnapshot(true);
 
-  setStatus("FINISHED — ALL PARTICLES STOPPED");
+  setStatus(
+    "FINISHED — ALL PARTICLES STOPPED"
+  );
+
   updatePlayButton();
   updateTimelineInterface();
 }
@@ -2944,7 +4062,6 @@ function resetSimulation() {
   source.draftWorld = [];
 
   updateDraftLine();
-
   clearSimulationCache();
 
   generateParticles();
@@ -2974,27 +4091,41 @@ function simulateFrame(realDeltaTime) {
   }
 
   simulation.accumulator +=
-    Math.min(realDeltaTime, 0.1) *
+    Math.min(
+      realDeltaTime,
+      0.1
+    ) *
     params.simulationSpeed;
 
   let substeps = 0;
 
   while (
-    simulation.accumulator >= PHYSICS_STEP &&
-    substeps < MAX_PHYSICS_SUBSTEPS
+    simulation.accumulator >=
+      PHYSICS_STEP &&
+    substeps <
+      MAX_PHYSICS_SUBSTEPS
   ) {
-    const finished = updatePhysics(
-      PHYSICS_STEP
-    );
+    const finished =
+      updatePhysics(
+        PHYSICS_STEP
+      );
 
-    simulation.time += PHYSICS_STEP;
-    simulation.accumulator -= PHYSICS_STEP;
-    simulation.cacheAccumulator += PHYSICS_STEP;
+    simulation.time +=
+      PHYSICS_STEP;
+
+    simulation.accumulator -=
+      PHYSICS_STEP;
+
+    simulation.cacheAccumulator +=
+      PHYSICS_STEP;
 
     while (
-      simulation.cacheAccumulator >= CACHE_INTERVAL
+      simulation.cacheAccumulator >=
+      CACHE_INTERVAL
     ) {
-      simulation.cacheAccumulator -= CACHE_INTERVAL;
+      simulation.cacheAccumulator -=
+        CACHE_INTERVAL;
+
       recordSimulationSnapshot();
     }
 
@@ -3014,7 +4145,7 @@ function simulateFrame(realDeltaTime) {
 
 
 /* ------------------------------------------------------------------------- */
-/* Pointer interaction                                                       */
+/* Pointer interaction                                                      */
 /* ------------------------------------------------------------------------- */
 
 function updatePointerFromEvent(event) {
@@ -3022,15 +4153,20 @@ function updatePointerFromEvent(event) {
     renderer.domElement.getBoundingClientRect();
 
   pointer.x =
-    ((event.clientX - rectangle.left) /
-      rectangle.width) *
+    (
+      (event.clientX - rectangle.left) /
+      rectangle.width
+    ) *
       2 -
     1;
 
   pointer.y =
     -(
-      (event.clientY - rectangle.top) /
-        rectangle.height
+      (
+        event.clientY -
+        rectangle.top
+      ) /
+      rectangle.height
     ) *
       2 +
     1;
@@ -3055,11 +4191,14 @@ function terrainPointFromEvent(event) {
       false
     );
 
-  if (intersections.length === 0) {
+  if (
+    intersections.length === 0
+  ) {
     return null;
   }
 
-  const point = intersections[0].point;
+  const point =
+    intersections[0].point;
 
   return new THREE.Vector2(
     point.x,
@@ -3088,7 +4227,8 @@ function pointerDownCapture(event) {
     event.ctrlKey;
 
   const polygonMode =
-    params.releaseShapeMode === "polygon";
+    params.releaseShapeMode ===
+    "polygon";
 
   if (
     polygonMode &&
@@ -3098,7 +4238,8 @@ function pointerDownCapture(event) {
     event.stopPropagation();
     event.stopImmediatePropagation();
 
-    const point = terrainPointFromEvent(event);
+    const point =
+      terrainPointFromEvent(event);
 
     if (!point) {
       return;
@@ -3108,7 +4249,9 @@ function pointerDownCapture(event) {
       source.drawing = true;
       source.draftWorld = [];
 
-      setStatus("DRAWING RELEASE SHAPE");
+      setStatus(
+        "DRAWING RELEASE SHAPE"
+      );
     }
 
     addDraftPoint(point);
@@ -3124,7 +4267,8 @@ function pointerDownCapture(event) {
     event.stopPropagation();
     event.stopImmediatePropagation();
 
-    const point = terrainPointFromEvent(event);
+    const point =
+      terrainPointFromEvent(event);
 
     if (!point) {
       return;
@@ -3142,39 +4286,47 @@ renderer.domElement.addEventListener(
 );
 
 
-window.addEventListener("keydown", (event) => {
-  if (!source.drawing) {
-    return;
+window.addEventListener(
+  "keydown",
+  (event) => {
+    if (!source.drawing) {
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      finishCustomShape();
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+
+      source.drawing = false;
+      source.draftWorld = [];
+
+      updateDraftLine();
+
+      setStatus(
+        "DRAWING CANCELLED"
+      );
+    }
+
+    if (event.key === "Backspace") {
+      event.preventDefault();
+
+      source.draftWorld.pop();
+      updateDraftLine();
+
+      setStatus(
+        "DRAWING RELEASE SHAPE"
+      );
+    }
   }
-
-  if (event.key === "Enter") {
-    event.preventDefault();
-    finishCustomShape();
-  }
-
-  if (event.key === "Escape") {
-    event.preventDefault();
-
-    source.drawing = false;
-    source.draftWorld = [];
-
-    updateDraftLine();
-    setStatus("DRAWING CANCELLED");
-  }
-
-  if (event.key === "Backspace") {
-    event.preventDefault();
-
-    source.draftWorld.pop();
-    updateDraftLine();
-
-    setStatus("DRAWING RELEASE SHAPE");
-  }
-});
+);
 
 
 /* ------------------------------------------------------------------------- */
-/* Model loading                                                             */
+/* Model loading                                                            */
 /* ------------------------------------------------------------------------- */
 
 async function loadTerrainFile(file) {
@@ -3192,35 +4344,55 @@ async function loadTerrainFile(file) {
     let object;
 
     if (extension === "obj") {
-      const text = await file.text();
-      object = new OBJLoader().parse(text);
+      const text =
+        await file.text();
+
+      object =
+        new OBJLoader().parse(
+          text
+        );
     } else {
-      const buffer = await file.arrayBuffer();
+      const buffer =
+        await file.arrayBuffer();
 
       let geometry;
 
       if (extension === "ply") {
-        geometry = new PLYLoader().parse(buffer);
+        geometry =
+          new PLYLoader().parse(
+            buffer
+          );
       }
 
       if (extension === "stl") {
-        geometry = new STLLoader().parse(buffer);
+        geometry =
+          new STLLoader().parse(
+            buffer
+          );
       }
 
       if (!geometry) {
-        throw new Error("Unsupported terrain format");
+        throw new Error(
+          "Unsupported terrain format"
+        );
       }
 
-      object = new THREE.Mesh(
-        geometry,
-        new THREE.MeshBasicMaterial()
-      );
+      object =
+        new THREE.Mesh(
+          geometry,
+          new THREE.MeshBasicMaterial()
+        );
     }
 
-    const points = extractPointsFromObject(object);
+    const points =
+      extractPointsFromObject(
+        object
+      );
 
     if (points.length < 3) {
-      throw new Error("No usable vertices found");
+      throw new Error(
+        "No usable vertices found"
+      );
     }
 
     importedRawPoints = points;
@@ -3233,7 +4405,9 @@ async function loadTerrainFile(file) {
     );
   } catch (error) {
     console.error(error);
-    setStatus("MODEL IMPORT FAILED");
+    setStatus(
+      "MODEL IMPORT FAILED"
+    );
   }
 }
 
@@ -3268,7 +4442,10 @@ ui.dropZone.addEventListener(
   "dragover",
   (event) => {
     event.preventDefault();
-    ui.dropZone.classList.add("dragover");
+
+    ui.dropZone.classList.add(
+      "dragover"
+    );
   }
 );
 
@@ -3276,7 +4453,9 @@ ui.dropZone.addEventListener(
 ui.dropZone.addEventListener(
   "dragleave",
   () => {
-    ui.dropZone.classList.remove("dragover");
+    ui.dropZone.classList.remove(
+      "dragover"
+    );
   }
 );
 
@@ -3285,9 +4464,13 @@ ui.dropZone.addEventListener(
   "drop",
   (event) => {
     event.preventDefault();
-    ui.dropZone.classList.remove("dragover");
 
-    const file = event.dataTransfer.files[0];
+    ui.dropZone.classList.remove(
+      "dragover"
+    );
+
+    const file =
+      event.dataTransfer.files[0];
 
     loadTerrainFile(file);
   }
@@ -3295,7 +4478,7 @@ ui.dropZone.addEventListener(
 
 
 /* ------------------------------------------------------------------------- */
-/* UI bindings                                                               */
+/* UI bindings                                                              */
 /* ------------------------------------------------------------------------- */
 
 bindRangeAndNumber(
@@ -3484,7 +4667,10 @@ bindRangeAndNumber(
   "rotationX",
   () => {},
   () => {
-    if (!params.running && importedRawPoints) {
+    if (
+      !params.running &&
+      importedRawPoints
+    ) {
       buildCurrentTerrain();
       resetSimulation();
     }
@@ -3498,7 +4684,10 @@ bindRangeAndNumber(
   "rotationY",
   () => {},
   () => {
-    if (!params.running && importedRawPoints) {
+    if (
+      !params.running &&
+      importedRawPoints
+    ) {
       buildCurrentTerrain();
       resetSimulation();
     }
@@ -3512,7 +4701,10 @@ bindRangeAndNumber(
   "rotationZ",
   () => {},
   () => {
-    if (!params.running && importedRawPoints) {
+    if (
+      !params.running &&
+      importedRawPoints
+    ) {
       buildCurrentTerrain();
       resetSimulation();
     }
@@ -3541,12 +4733,17 @@ ui.releaseShapeMode.addEventListener(
     updateShapeVisibility();
     updateSourceVisuals();
 
-    if (params.releaseShapeMode === "polygon") {
+    if (
+      params.releaseShapeMode ===
+      "polygon"
+    ) {
       setStatus(
         "HOLD CMD OR CTRL AND CLICK TERRAIN"
       );
     } else {
-      setStatus("SQUARE RELEASE AREA");
+      setStatus(
+        "SQUARE RELEASE AREA"
+      );
     }
 
     requestParticleReset();
@@ -3557,7 +4754,9 @@ ui.releaseShapeMode.addEventListener(
 ui.colorMode.addEventListener(
   "change",
   () => {
-    params.colorMode = ui.colorMode.value;
+    params.colorMode =
+      ui.colorMode.value;
+
     updateParticleColors();
   }
 );
@@ -3566,8 +4765,11 @@ ui.colorMode.addEventListener(
 ui.drawReleaseShapeButton.addEventListener(
   "click",
   () => {
-    params.releaseShapeMode = "polygon";
-    ui.releaseShapeMode.value = "polygon";
+    params.releaseShapeMode =
+      "polygon";
+
+    ui.releaseShapeMode.value =
+      "polygon";
 
     updateShapeVisibility();
 
@@ -3644,13 +4846,15 @@ ui.resetButton.addEventListener(
 ui.addButton.addEventListener(
   "click",
   () => {
-    const newVolume = clamp(
-      params.sourceVolume + 1000,
-      Number(ui.sourceVolume.min),
-      Number(ui.sourceVolume.max)
-    );
+    const newVolume =
+      clamp(
+        params.sourceVolume + 1000,
+        MIN_SOURCE_VOLUME,
+        MAX_SOURCE_VOLUME
+      );
 
-    params.sourceVolume = newVolume;
+    params.sourceVolume =
+      newVolume;
 
     setSliderAndNumber(
       ui.sourceVolume,
@@ -3669,9 +4873,13 @@ ui.terrainButton.addEventListener(
   "click",
   () => {
     importedRawPoints = null;
+
     buildProceduralTerrain();
     resetSimulation();
-    setStatus("NEW ALPINE TERRAIN");
+
+    setStatus(
+      "NEW ALPINE TERRAIN"
+    );
   }
 );
 
@@ -3683,14 +4891,20 @@ ui.timeline.addEventListener(
 
 
 /* ------------------------------------------------------------------------- */
-/* Resize and animation                                                      */
+/* Resize and animation                                                     */
 /* ------------------------------------------------------------------------- */
 
 function resizeRenderer() {
-  const width = ui.viewer.clientWidth;
-  const height = ui.viewer.clientHeight;
+  const width =
+    ui.viewer.clientWidth;
 
-  if (width <= 0 || height <= 0) {
+  const height =
+    ui.viewer.clientHeight;
+
+  if (
+    width <= 0 ||
+    height <= 0
+  ) {
     return;
   }
 
@@ -3700,7 +4914,9 @@ function resizeRenderer() {
     false
   );
 
-  camera.aspect = width / height;
+  camera.aspect =
+    width / height;
+
   camera.updateProjectionMatrix();
 }
 
@@ -3711,15 +4927,22 @@ window.addEventListener(
 );
 
 
-let previousTime = performance.now();
+let previousTime =
+  performance.now();
+
 
 function animate(currentTime) {
-  const deltaTime = Math.min(
-    (currentTime - previousTime) / 1000,
-    0.1
-  );
+  const deltaTime =
+    Math.min(
+      (
+        currentTime -
+        previousTime
+      ) / 1000,
+      0.1
+    );
 
-  previousTime = currentTime;
+  previousTime =
+    currentTime;
 
   controls.update();
   simulateFrame(deltaTime);
@@ -3729,12 +4952,14 @@ function animate(currentTime) {
     camera
   );
 
-  requestAnimationFrame(animate);
+  requestAnimationFrame(
+    animate
+  );
 }
 
 
 /* ------------------------------------------------------------------------- */
-/* Initialisation                                                             */
+/* Initialisation                                                           */
 /* ------------------------------------------------------------------------- */
 
 updateDirectionVisibility();
@@ -3745,4 +4970,6 @@ resizeRenderer();
 buildCurrentTerrain();
 resetSimulation();
 
-requestAnimationFrame(animate);
+requestAnimationFrame(
+  animate
+);

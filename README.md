@@ -1,17 +1,17 @@
 # Dynamic Landscape Tool
 
-A lightweight, browser-based, real-time particle simulation for observing
-sediment movement across a simplified terrain.
+A lightweight, browser-based, particle simulation for observing
+debris flow movement across a simplified terrain.
 
 The project is MPM-inspired, but it is not a full physically validated
 Material Point Method solver. It is intended as an exploratory design and
 research interface.
 
-## Run locally
+Costum terrain models can be imported by drag and drop. A source material location and volume can be defined,
+and material properties like friction and cohesion edited.
 
-The project uses ES modules and therefore needs a local web server.
+Authorship: Dennis Häusler, Institute for Landscape and Urban Studies, ETH Zurich, 2026
+Contact: haeusler@arch.ethz.ch
+Copyright: ETH Zurich
 
-With Python:
-
-```bash
-python3 -m http.server 8000
+This is an intermediate beta version, which is not published yet.
