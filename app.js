@@ -139,13 +139,13 @@ const params = {
   depthScale: 1,
 
   releaseShapeMode: "rectangle",
-  sourceArea: 100,
+  sourceArea: 3000,
 
   sourceVolume: 10000,
   particleDensity: 1,
 
   colorMode: "material",
-  particleSize: 1,
+  particleSize: 0.01,
 
   rotationX: 0,
   rotationY: 0,
