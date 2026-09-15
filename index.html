@@ -2,13 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <title>Dynamic Landscape Tool</title>
+  <title>Sediment Flow Simulator</title>
 
   <link rel="stylesheet" href="./style.css">
 
@@ -41,24 +37,23 @@
 
         <p class="description">
           A simplified terrain-based model for observing sediment movement
-          across changing topography.
+          across changing topography.<br><br>
+
+          For visualisation purposes only.<br>
+          Developed by Dennis Häusler, Institute for Landscape and Urban
+          Studies, ETH Zurich 2026, assisted by AI (GPT-5.6).
         </p>
       </header>
 
 
       <section class="controls">
 
-        <!-- MATERIAL -->
-
-        <details open>
+        <details>
           <summary>MATERIAL</summary>
 
           <div class="details-body">
 
-            <div
-              class="control"
-              data-tip="Friction between individual sediment particles."
-            >
+            <div class="control">
               <div class="label-row">
                 <label for="materialFriction">
                   MATERIAL FRICTION
@@ -86,10 +81,7 @@
             </div>
 
 
-            <div
-              class="control"
-              data-tip="Friction between the sediment and terrain surface."
-            >
+            <div class="control">
               <div class="label-row">
                 <label for="terrainFriction">
                   TERRAIN FRICTION
@@ -117,10 +109,7 @@
             </div>
 
 
-            <div
-              class="control"
-              data-tip="Controls the attraction between nearby particles."
-            >
+            <div class="control">
               <div class="label-row">
                 <label for="particleCohesion">
                   PARTICLE COHESION
@@ -148,10 +137,7 @@
             </div>
 
 
-            <div
-              class="control"
-              data-tip="Initial movement velocity in metres per second."
-            >
+            <div class="control">
               <div class="label-row">
                 <label for="startVelocity">
                   START VELOCITY m/s
@@ -179,10 +165,7 @@
             </div>
 
 
-            <div
-              class="control"
-              data-tip="Multiplier for simulated physical time."
-            >
+            <div class="control">
               <div class="label-row">
                 <label for="simulationSpeed">
                   SIMULATION SPEED ×
@@ -217,21 +200,10 @@
                 </label>
 
                 <select id="startDirectionMode">
-                  <option value="downhill">
-                    DOWNHILL
-                  </option>
-
-                  <option value="fixed">
-                    FIXED HEADING
-                  </option>
-
-                  <option value="radial">
-                    RADIAL FROM SOURCE
-                  </option>
-
-                  <option value="vector">
-                    USER VECTOR
-                  </option>
+                  <option value="downhill">DOWNHILL</option>
+                  <option value="fixed">FIXED HEADING</option>
+                  <option value="radial">RADIAL FROM SOURCE</option>
+                  <option value="vector">USER VECTOR</option>
                 </select>
               </div>
             </div>
@@ -239,8 +211,7 @@
 
             <div
               id="fixedDirectionControl"
-              class="control direction-control hidden"
-              data-tip="0° points toward positive Z. 90° points toward positive X."
+              class="control hidden"
             >
               <div class="label-row">
                 <label for="directionAngle">
@@ -271,8 +242,7 @@
 
             <div
               id="userDirectionXControl"
-              class="control direction-control hidden"
-              data-tip="User-defined horizontal X direction."
+              class="control hidden"
             >
               <div class="label-row">
                 <label for="directionX">
@@ -303,8 +273,7 @@
 
             <div
               id="userDirectionZControl"
-              class="control direction-control hidden"
-              data-tip="User-defined horizontal Z direction."
+              class="control hidden"
             >
               <div class="label-row">
                 <label for="directionZ">
@@ -336,17 +305,12 @@
         </details>
 
 
-        <!-- TERRAIN -->
-
-        <details open>
+        <details>
           <summary>TERRAIN</summary>
 
           <div class="details-body">
 
-            <div
-              class="control"
-              data-tip="Number of subdivisions used to construct the terrain."
-            >
+            <div class="control">
               <div class="label-row">
                 <label for="terrainResolution">
                   TERRAIN RESOLUTION
@@ -377,17 +341,12 @@
         </details>
 
 
-        <!-- MODEL -->
-
         <details>
-          <summary>MODEL</summary>
+          <summary>MODEL SCALE</summary>
 
           <div class="details-body">
 
-            <div
-              class="control"
-              data-tip="Visual scale applied to the terrain."
-            >
+            <div class="control">
               <div class="label-row">
                 <label for="modelScale">
                   MODEL SCALE ×
@@ -398,7 +357,7 @@
                   class="numeric-input"
                   type="number"
                   min="0.1"
-                  max="1000"
+                  max="10"
                   step="0.1"
                   value="1"
                 >
@@ -408,17 +367,14 @@
                 id="modelScale"
                 type="range"
                 min="0.1"
-                max="1000"
+                max="10"
                 step="0.1"
                 value="1"
               >
             </div>
 
 
-            <div
-              class="control"
-              data-tip="Physical conversion from imported model units to metres."
-            >
+            <div class="control">
               <div class="label-row">
                 <label for="metersPerModelUnit">
                   METRES / MODEL UNIT
@@ -446,10 +402,7 @@
             </div>
 
 
-            <div
-              class="control"
-              data-tip="Vertical terrain exaggeration multiplier."
-            >
+            <div class="control">
               <div class="label-row">
                 <label for="verticalExaggeration">
                   VERTICAL SCALE ×
@@ -460,7 +413,7 @@
                   class="numeric-input"
                   type="number"
                   min="0.1"
-                  max="20"
+                  max="10"
                   step="0.1"
                   value="1"
                 >
@@ -470,17 +423,14 @@
                 id="verticalExaggeration"
                 type="range"
                 min="0.1"
-                max="20"
+                max="10"
                 step="0.1"
                 value="1"
               >
             </div>
 
 
-            <div
-              class="control"
-              data-tip="Independent depth-axis multiplier. Default is 1.0."
-            >
+            <div class="control">
               <div class="label-row">
                 <label for="depthScale">
                   Z AXIS SCALE ×
@@ -491,7 +441,7 @@
                   class="numeric-input"
                   type="number"
                   min="0.1"
-                  max="20"
+                  max="10"
                   step="0.1"
                   value="1"
                 >
@@ -501,7 +451,7 @@
                 id="depthScale"
                 type="range"
                 min="0.1"
-                max="20"
+                max="10"
                 step="0.1"
                 value="1"
               >
@@ -511,9 +461,7 @@
         </details>
 
 
-        <!-- SOURCE MATERIAL -->
-
-        <details open>
+        <details>
           <summary>SOURCE MATERIAL</summary>
 
           <div class="details-body">
@@ -525,13 +473,8 @@
                 </label>
 
                 <select id="releaseShapeMode">
-                  <option value="rectangle">
-                    SQUARE AREA
-                  </option>
-
-                  <option value="polygon">
-                    CUSTOM POLYGON
-                  </option>
+                  <option value="rectangle">SQUARE AREA</option>
+                  <option value="polygon">CUSTOM POLYGON</option>
                 </select>
               </div>
             </div>
@@ -540,7 +483,6 @@
             <div
               id="rectangleAreaControl"
               class="control"
-              data-tip="Area of the square release region."
             >
               <div class="label-row">
                 <label for="sourceArea">
@@ -588,7 +530,8 @@
               </button>
 
               <div id="drawShapeHint">
-                Hold CMD and left-click terrain points. Press ENTER to finish.
+                Hold CMD or CTRL and left-click terrain points. Press ENTER
+                to finish.
               </div>
 
               <div id="releaseAreaReadout">
@@ -597,10 +540,7 @@
             </div>
 
 
-            <div
-              class="control"
-              data-tip="Total physical source material volume."
-            >
+            <div class="control">
               <div class="label-row">
                 <label for="sourceVolume">
                   SOURCE VOLUME m³
@@ -628,10 +568,7 @@
             </div>
 
 
-            <div
-              class="control"
-              data-tip="Number of simulated particles generated per cubic metre."
-            >
+            <div class="control">
               <div class="label-row">
                 <label for="particleDensity">
                   PARTICLES / m³
@@ -641,9 +578,9 @@
                   id="particleDensityNumber"
                   class="numeric-input"
                   type="number"
-                  min="0.01"
+                  min="0.001"
                   max="10"
-                  step="0.01"
+                  step="0.001"
                   value="1"
                 >
               </div>
@@ -651,60 +588,10 @@
               <input
                 id="particleDensity"
                 type="range"
-                min="0.01"
+                min="0.001"
                 max="10"
-                step="0.01"
+                step="0.001"
                 value="1"
-              >
-            </div>
-
-
-            <div class="control">
-              <div class="label-row">
-                <label for="particleVisualization">
-                  VISUALIZATION
-                </label>
-
-                <select id="particleVisualization">
-                  <option value="points">
-                    POINT PARTICLES
-                  </option>
-
-                  <option value="soup">
-                    CONNECTED SOUP
-                  </option>
-                </select>
-              </div>
-            </div>
-
-
-            <div
-              class="control"
-              data-tip="Maximum center distance at which particles remain connected in the soup visualization."
-            >
-              <div class="label-row">
-                <label for="soupLinkRange">
-                  SOUP LINK RANGE × DIAMETER
-                </label>
-
-                <input
-                  id="soupLinkRangeNumber"
-                  class="numeric-input"
-                  type="number"
-                  min="0.75"
-                  max="4"
-                  step="0.05"
-                  value="1.25"
-                >
-              </div>
-
-              <input
-                id="soupLinkRange"
-                type="range"
-                min="0.75"
-                max="4"
-                step="0.05"
-                value="1.25"
               >
             </div>
 
@@ -716,34 +603,17 @@
                 </label>
 
                 <select id="colorMode">
-                  <option value="material">
-                    MATERIAL
-                  </option>
-
-                  <option value="velocity">
-                    VELOCITY
-                  </option>
-
-                  <option value="distance">
-                    DISTANCE TRAVELED
-                  </option>
-
-                  <option value="thickness">
-                    FLOW THICKNESS
-                  </option>
-
-                  <option value="age">
-                    PARTICLE AGE
-                  </option>
+                  <option value="material">MATERIAL</option>
+                  <option value="velocity">VELOCITY</option>
+                  <option value="distance">DISTANCE TRAVELED</option>
+                  <option value="thickness">FLOW THICKNESS</option>
+                  <option value="age">PARTICLE AGE</option>
                 </select>
               </div>
             </div>
 
 
-            <div
-              class="control"
-              data-tip="Visual scale for point particles only."
-            >
+            <div class="control">
               <div class="label-row">
                 <label for="particleSize">
                   PARTICLE DISPLAY SCALE ×
@@ -773,8 +643,6 @@
           </div>
         </details>
 
-
-        <!-- ORIENTATION -->
 
         <details>
           <summary>MODEL ORIENTATION</summary>
@@ -877,6 +745,7 @@
           </button>
         </div>
 
+
         <div class="button-row">
           <button
             id="playButton"
@@ -892,6 +761,7 @@
             RESET
           </button>
         </div>
+
 
         <div class="button-row secondary">
           <button
@@ -935,7 +805,32 @@
 
       <div id="sourceHint">
         SHIFT + LEFT CLICK TO MOVE SOURCE<br>
-        CMD + LEFT CLICK TO DRAW CUSTOM SHAPE
+        CMD / CTRL + LEFT CLICK TO DRAW CUSTOM SHAPE
+      </div>
+
+
+      <div
+        id="timelineWrap"
+        class="timeline hidden"
+      >
+        <div class="timeline-heading">
+          <span>SIMULATION CACHE</span>
+          <span id="timelineReadout">0.00 s</span>
+        </div>
+
+        <input
+          id="timeline"
+          type="range"
+          min="0"
+          max="0"
+          step="1"
+          value="0"
+        >
+
+        <div class="timeline-note">
+          Drag to review cached positions. PLAY resumes from the selected
+          frame.
+        </div>
       </div>
 
 
